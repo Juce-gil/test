@@ -1,0 +1,15 @@
+# 排除前端依赖
+node_modules/
+dist/
+.DS_Store
+
+# 排除后端编译输出
+target/
+*.iml
+.idea/
+.classpath
+.project
+.settings/
+
+# 排除日志
+*.log
