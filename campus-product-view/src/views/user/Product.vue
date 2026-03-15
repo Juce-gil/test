@@ -2,53 +2,55 @@
     <div>
         <div class="nav-category">
             <div class="left">
-                <span :style="{
-                    color: categorySelectedItem.name === isUseCategory.name ? 'rgb(248,248,248)' : '',
-                    backgroundColor: categorySelectedItem.name === isUseCategory.name ? 'rgb(255,209,80)' : ''
-                }" @click="categorySelected(isUseCategory)" :key="index"
+                <span class="tab"
+                    :class="{ active: categorySelectedItem.name === isUseCategory.name }"
+                    @click="categorySelected(isUseCategory)" :key="index"
                     v-for="(isUseCategory, index) in isUseCategoryList">
                     {{ isUseCategory.name }}
                 </span>
             </div>
             <div class="right">
-                <span class="bargain">
-                    <span :style="{
-                        color: bargainSelectedItem.name === bargain.name ? 'rgb(248,248,248)' : '',
-                        backgroundColor: bargainSelectedItem.name === bargain.name ? 'rgb(255, 209, 80)' : ''
-                    }" @click="bargainSelected(bargain)" v-for="(bargain, index) in bargainStatus" :key="index">{{
-                        bargain.name }}</span>
-                </span>
-                <el-date-picker style="width: 216px;margin-right: 5px;" @change="fetchFreshData" size="small"
+                <div class="filter-group">
+                    <span class="bargain">
+                        <span class="pill" :class="{ active: bargainSelectedItem.name === bargain.name }"
+                            @click="bargainSelected(bargain)" v-for="(bargain, index) in bargainStatus" :key="index">
+                            {{ bargain.name }}
+                        </span>
+                    </span>
+                </div>
+                <div class="filter-group">
+                    <el-date-picker class="filter-control" style="width: 220px;" @change="fetchFreshData" size="small"
                     v-model="searchTime" type="daterange" range-separator="至" start-placeholder="发布开始"
                     end-placeholder="发布结束">
-                </el-date-picker>
-                <el-select style="width: 100px;margin-right: 5px;" @change="fetchFreshData" size="small"
+                    </el-date-picker>
+                    <el-select class="filter-control" style="width: 120px;" @change="fetchFreshData" size="small"
                     v-model="productQueryDto.categoryId" placeholder="商品类别">
                     <el-option v-for="item in categoryList" :key="item.id" :label="item.name" :value="item.id">
                     </el-option>
-                </el-select>
+                    </el-select>
+                </div>
             </div>
         </div>
         <div class="product-list">
             <el-row v-if="productList.length === 0">
                 <el-empty description="暂无商品信息"></el-empty>
             </el-row>
-            <el-row v-else>
+            <el-row v-else :gutter="16">
                 <el-col @click.native="route(product)" :span="6" v-for="(product, index) in productList" :key="index">
                     <div class="item-product">
                         <div class="cover">
                             <img :src="coverListParse(product)" alt="" srcset="">
                         </div>
-                        <div style="display: flex;justify-content: left;gap: 4px;align-items: center;">
-                            <span class="bargain-hover">{{ product.isBargain ? '支持砍价' : '不支持砍价' }}</span>
-                            <span class="title">
-                                {{ product.name }}
-                            </span>
+                        <div class="meta-row">
+                            <span class="bargain-tag" :class="{ off: !product.isBargain }">{{ product.isBargain ? '支持砍价' : '不支持砍价' }}</span>
+                            <span class="love">{{ product.likeNumber }}人想要</span>
                         </div>
-                        <div style="padding-block: 15px;">
+                        <div class="title">
+                            {{ product.name }}
+                        </div>
+                        <div class="price-row">
                             <span class="decimel-symbol">¥</span>
                             <span class="price">{{ product.price }}</span>
-                            <span class="love">{{ product.likeNumber }}人想要</span>
                         </div>
                         <div class="info">
                             <img :src="product.userAvatar" alt="" srcset="">
@@ -160,23 +162,30 @@ export default {
 .cover {
     img {
         width: 100%;
-        height: 240px;
-        border-radius: 10px;
+        height: 200px;
+        border-radius: 12px;
+        object-fit: cover;
     }
 }
 
-.bargain-hover {
-    font-size: 12px;
-    font-weight: 800;
-    background-color: rgb(255, 230, 15);
-    color: rgb(51, 51, 51);
-    border-radius: 2px;
-    padding: 2px 6px;
+.meta-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 10px;
 }
 
 .title {
-    font-size: 20px;
+    font-size: 16px;
+    line-height: 22px;
     color: #1f1f1f;
+    font-weight: 700;
+    margin-top: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .decimel-symbol {
@@ -185,6 +194,12 @@ export default {
     font-weight: 800;
 }
 
+.price-row{
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 10px 0 12px 0;
+}
 .price {
     font-size: 24px;
     color: #ff4f24;
@@ -197,21 +212,41 @@ export default {
     color: #999;
 }
 
+.bargain-tag{
+    font-size: 12px;
+    font-weight: 700;
+    background-color: rgba(245, 194, 66, 0.22);
+    color: rgb(123, 88, 10);
+    border: 1px solid rgba(245, 194, 66, 0.35);
+    border-radius: 999px;
+    padding: 2px 10px;
+    line-height: 18px;
+    white-space: nowrap;
+}
+.bargain-tag.off{
+    background-color: rgba(153, 153, 153, 0.12);
+    border: 1px solid rgba(153, 153, 153, 0.18);
+    color: rgba(0,0,0,0.55);
+}
+
 .info {
     display: flex;
     justify-content: left;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
+    padding-top: 8px;
 
     img {
-        width: 20px;
-        height: 20px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
+        object-fit: cover;
     }
 
     span {
-        font-size: 14px;
-        color: #999;
+        font-size: 13px;
+        color: rgba(0,0,0,0.65);
+        font-weight: 600;
     }
 }
 
@@ -222,53 +257,101 @@ export default {
     line-height: 24px;
     padding-inline: 10px;
     padding-block: 4px;
-    margin-right: 5px;
-    border-radius: 5px;
+    border-radius: 999px;
     cursor: pointer;
 
     span {
         display: inline-block;
         padding-inline: 10px;
-        border-radius: 5px;
+        border-radius: 999px;
     }
+}
+.pill{
+    color: rgba(0,0,0,0.65);
+    user-select: none;
+}
+.pill.active{
+    color: rgb(255, 255, 255);
+    background-color: rgb(51, 51, 51);
 }
 
 .product-list {
     padding-block: 20px;
 
     .item-product {
-        padding: 10px 10px 16px 10px;
+        padding: 12px 12px 14px 12px;
         box-sizing: border-box;
-        border-radius: 15px;
-        transition: all .5s;
+        border-radius: 16px;
+        transition: all .25s ease;
         cursor: pointer;
+        background: rgb(255,255,255);
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        height: 100%;
     }
 
     .item-product:hover {
-        box-shadow: 1px 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
     }
 }
 
 .nav-category {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
 
     .left {
         display: flex;
         justify-content: left;
-        gap: 6px;
+        gap: 8px;
+        flex-wrap: wrap;
 
-        span {
-            display: inline-block;
-            background-color: rgb(246, 246, 246);
-            padding: 6px 22px;
+        .tab {
+            display: inline-flex;
+            align-items: center;
+            background-color: rgba(0,0,0,0.04);
+            padding: 8px 16px;
             cursor: pointer;
-            border-radius: 15px;
+            border-radius: 999px;
+            user-select: none;
+            font-size: 13px;
+            color: rgba(0,0,0,0.65);
         }
 
-        span:hover {
-            background-color: rgb(242, 242, 242);
+        .tab:hover {
+            background-color: rgba(0,0,0,0.06);
         }
+        .tab.active{
+            background-color: rgb(255, 209, 80);
+            color: rgb(51, 51, 51);
+            font-weight: 800;
+        }
+    }
+
+    .right{
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .filter-group{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 10px;
+        border-left: 1px solid rgba(0,0,0,0.06);
+    }
+    .filter-group:first-child{
+        border-left: none;
+        padding-left: 0;
+    }
+    .filter-control :deep(.el-input__inner){
+        border-radius: 12px;
+        height: 34px;
+        line-height: 34px;
     }
 }
 </style>

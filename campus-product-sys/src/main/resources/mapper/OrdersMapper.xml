@@ -176,16 +176,26 @@
         FROM orders o
         LEFT JOIN user u ON u.id = o.user_id
         LEFT JOIN product p ON p.id = o.product_id
-        WHERE o.product_id IN
-        <foreach collection="productIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-        <if test="tradeStatus != null">
-            AND o.trade_status = #{tradeStatus}
-        </if>
-        <if test="code != null and code != ''">
-            AND o.code LIKE concat('%',#{code},'%')
-        </if>
+        <where>
+            <choose>
+                <when test="productIds != null and productIds.size() &gt; 0">
+                    o.product_id IN
+                    <foreach collection="productIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                </when>
+                <otherwise>
+                    1 = 0
+                </otherwise>
+            </choose>
+            <if test="tradeStatus != null">
+                AND o.trade_status = #{tradeStatus}
+            </if>
+            <if test="code != null and code != ''">
+                AND o.code LIKE concat('%',#{code},'%')
+            </if>
+        </where>
+        ORDER BY o.id DESC
     </select>
 
     <!-- 通用查询映射结果 -->

@@ -8,21 +8,21 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="seniors-nursing" />
+      </profile>
+      <profile name="Annotation profile for campus-product-api" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="C:/soft/apache-maven-3.9.9/repository/org/projectlombok/lombok/1.18.10/lombok-1.18.10.jar" />
+        </processorPath>
         <module name="campus-product-api" />
-        <module name="health-api" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="class-net" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="campus-product-api" options="-parameters" />
-      <module name="class-net" options="-parameters" />
-      <module name="health-api" options="-parameters" />
-      <module name="seniors-nursing" options="-parameters" />
+      <module name="campus-product-api" options="-parameters -parameters -J-Djps.track.ap.dependencies=true" />
     </option>
   </component>
 </project>

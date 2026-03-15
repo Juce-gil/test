@@ -2,72 +2,84 @@
     <div>
         <div class="container">
             <div class="top">
-                <div class="nav">
-                    <div>
-                        <Logo name="校园交易" />
-                    </div>
-                    <div class="route">
-                        <span @click="handleRouteSelect('/product')">商品</span>
-                        <span v-if="loginStatus" @click="handleRouteSelect('/myProduct')">我的商品</span>
-                        <span v-if="loginStatus" @click="handleRouteSelect('/mySave')">我的收藏</span>
-                        <span v-if="loginStatus" @click="handleRouteSelect('/myView')">足迹</span>
-                    </div>
-                </div>
-                <div
-                    style="cursor: pointer;font-size: 14px;display: flex;justify-content: left;align-items: center;gap: 20px;color: rgb(143, 143, 143);">
-                    <div class="word-search">
-                        <div class="item">
-                            <input type="text" placeholder="搜索商品" v-model="key">
-                            <i class="el-icon-search" @click="fetch"></i>
+                <div class="top-inner">
+                    <div class="nav">
+                        <div class="logo">
+                            <Logo name="校园交易" />
+                        </div>
+                        <div class="route">
+                            <span @click="handleRouteSelect('/product')">商品</span>
+                            <span v-if="loginStatus" @click="handleRouteSelect('/myProduct')">我的商品</span>
+                            <span v-if="loginStatus" @click="handleRouteSelect('/mySave')">我的收藏</span>
+                            <span v-if="loginStatus" @click="handleRouteSelect('/myView')">足迹</span>
                         </div>
                     </div>
-                    <div style="text-align: center;" v-if="loginStatus" @click="handleRouteSelect('/orders')">
-                        <div>
+
+                    <div class="top-actions">
+                        <div class="word-search">
+                            <div class="item">
+                                <input type="text" placeholder="搜索商品" v-model="key">
+                                <i class="el-icon-search" @click="fetch"></i>
+                            </div>
+                        </div>
+
+                        <div class="action-icon" v-if="loginStatus" @click="handleRouteSelect('/orders')">
                             <i class="el-icon-document"></i>
+                            <span>订单</span>
                         </div>
-                        <div>
-                            订单
-                        </div>
-                    </div>
-                    <div style="text-align: center;" v-if="loginStatus" @click="handleRouteSelect('/message')">
-                        <div>
+                        <div class="action-icon" v-if="loginStatus" @click="handleRouteSelect('/message')">
                             <i class="el-icon-bell"></i>
+                            <span>通知</span>
                         </div>
-                        <div>
-                            通知
-                        </div>
-                    </div>
-                    <div style="text-align: center;" v-if="loginStatus" @click="handleRouteSelect('/post-product')">
-                        <div>
+
+                        <div class="action-primary" v-if="loginStatus" @click="handleRouteSelect('/post-product')">
                             <i class="el-icon-plus"></i>
+                            <span>发布商品</span>
                         </div>
-                        <div>
-                            发布商品
+
+                        <div class="login-link" v-if="!loginStatus" @click="loginOperation">
+                            登录&nbsp;|&nbsp;注册
                         </div>
-                    </div>
-                    <div v-if="!loginStatus" @click="loginOperation">
-                        登录&nbsp;|&nbsp;注册
-                    </div>
-                    <div v-else>
-                        <img @click="handleRouteSelect('/myself')" class="avatar" :src="userInfo.userAvatar">
+                        <div v-else class="user-avatar">
+                            <el-dropdown trigger="click">
+                                <span class="user-entry">
+                                    <img class="avatar" :src="userInfo.userAvatar">
+                                    <span class="user-name" v-if="userInfo && userInfo.userName">
+                                        {{ userInfo.userName }}
+                                    </span>
+                                    <i class="el-icon-arrow-down el-icon--right"></i>
+                                </span>
+                                <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item icon="el-icon-user-solid" @click.native="goProfile">
+                                        个人中心
+                                    </el-dropdown-item>
+                                    <el-dropdown-item icon="el-icon-edit" @click.native="goEditProfile">
+                                        修改资料
+                                    </el-dropdown-item>
+                                    <el-dropdown-item divided icon="el-icon-switch-button" @click.native="logout">
+                                        退出登录
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </el-dropdown>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="info" v-if="loginStatus">
                 <div>
-                    <img :src="userInfo.userAvatar" style="width: 90px;width: 90px;border-radius: 50%;">
+                    <img :src="userInfo.userAvatar" class="info-avatar">
                 </div>
-                <div style="padding: 0 40px;">
+                <div class="info-main">
                     <div class="title1">
                         <span class="title">{{ userInfo.userName }}</span>
                         <span  class="poin" v-for="(info,index) in productInfoList" :key="index">
                             {{info.name}}·{{ info.count }}
                         </span>
                     </div>
-                    <div class="date">
+                    <div class="date meta">
                         上一次登录时间： {{ userInfo.lastLoginTime }}
                     </div>
-                    <div class="date">
+                    <div class="date meta">
                         注册于： {{ userInfo.createTime }}
                     </div>
                 </div>
@@ -80,7 +92,7 @@
 </template>
 <script>
 import Logo from "@/components/Logo";
-import { getToken, setUserInfo, setSearchKey } from "@/utils/storage";
+import { getToken, setUserInfo, setSearchKey, clearToken } from "@/utils/storage";
 export default {
     name: "Home",
     components: {
@@ -99,8 +111,8 @@ export default {
         };
     },
     created() {
+        // 只加载登录状态和用户信息，不做任何路由强制跳转
         this.loadLoginStatus();
-        this.handleRouteSelect('/product')
     },
     methods: {
         queryProductInfo() {
@@ -154,19 +166,123 @@ export default {
                 console.log("token检验异常：", error);
             });
         },
+        goProfile() {
+            // 进入个人中心-修改资料
+            this.handleRouteSelect('/myself?tab=info');
+        },
+        goEditProfile() {
+            // 显式进入修改资料页，便于后续扩展其他 Tab
+            this.handleRouteSelect('/myself?tab=edit');
+        },
+        logout() {
+            clearToken();
+            sessionStorage.setItem('userInfo', null);
+            this.loginStatus = false;
+            this.$router.push('/login');
+        },
     }
 };
 </script>
 <style scoped lang="scss">
+.top-inner{
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
 .avatar {
-    border: 3px solid rgb(51, 51, 51);
-    width: 30px;
-    width: 30px;
+    border: 2px solid rgba(255,255,255,0.18);
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
+    object-fit: cover;
+    box-sizing: border-box;
 }
 
 .avatar:hover {
-    border: 3px solid rgb(216, 206, 25);
+    border: 2px solid rgba(255, 209, 80, 0.9);
+}
+
+.top-actions{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgb(143, 143, 143);
+    flex: 0 0 auto;
+}
+.action-icon{
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    gap: 4px;
+    user-select: none;
+    color: rgb(143, 143, 143);
+
+    i{
+        font-size: 18px;
+        line-height: 18px;
+    }
+    span{
+        font-size: 12px;
+        line-height: 12px;
+    }
+}
+.action-icon:hover{
+    color: rgb(255, 255, 255);
+}
+.action-primary{
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 209, 80, 0.92);
+    color: rgb(51, 51, 51);
+    font-size: 14px;
+    font-weight: 700;
+    user-select: none;
+    white-space: nowrap;
+
+    i{
+        font-size: 16px;
+    }
+}
+.action-primary:hover{
+    background: rgba(255, 209, 80, 1);
+}
+.login-link{
+    cursor: pointer;
+    user-select: none;
+}
+.login-link:hover{
+    color: rgb(255, 255, 255);
+}
+.user-avatar{
+    display: flex;
+    align-items: center;
+}
+.user-entry{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: rgb(245,245,245);
+}
+.user-name{
+    max-width: 120px;
+    font-size: 13px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .word-search {
@@ -190,7 +306,7 @@ export default {
         input {
             border: none;
             transition: all 0.6s;
-            width: 80px;
+            width: 140px;
             margin: 0 10px;
             background-color: rgb(244, 244, 244);
             outline: none;
@@ -218,17 +334,32 @@ export default {
 }
 
 .info {
-    padding: 10px 200px;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 10px 24px 16px 24px;
     display: flex;
+    align-items: center;
+    gap: 14px;
 
-    img {
-        padding: 6px;
+    .info-avatar{
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        padding: 3px;
         box-sizing: border-box;
-        border: 3px solid rgb(255, 255, 255);
+        border: 2px solid rgba(255,255,255,0.85);
+        background: rgba(255,255,255,0.08);
+    }
+
+    .info-main{
+        padding: 0;
+        min-width: 0;
     }
 
     .title1 {
-        font-size: 26px;
+        font-size: 20px;
         color: rgb(255, 255, 255);
         gap: 12px;
 
@@ -247,9 +378,12 @@ export default {
 
     .save,
     .date {
-        margin: 10px 0;
+        margin: 6px 0;
         font-size: 12px;
         color: rgb(153, 150, 141);
+    }
+    .meta{
+        opacity: 0.85;
     }
 
 }
@@ -257,23 +391,21 @@ export default {
 .top {
 
     height: 80px;
-    padding: 0 200px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
 
     .nav {
-        padding: 20px 0;
         display: flex;
         justify-content: left;
         align-items: center;
-        gap: 20px;
+        gap: 18px;
 
         .route {
             display: flex;
             justify-content: left;
             align-items: center;
-            gap: 30px;
+            gap: 18px;
 
 
             span {

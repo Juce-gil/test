@@ -37,6 +37,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- 显式引入 spring-context，确保 IDE 能解析 org.springframework.stereotype 等包 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
         <!--SpringBoot Aop-->
         <dependency>
             <groupId>org.springframework.boot</groupId>

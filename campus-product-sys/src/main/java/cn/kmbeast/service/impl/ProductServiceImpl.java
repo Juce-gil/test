@@ -340,6 +340,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Result<List<ProductVO>> queryProductList(Integer id) {
         ProductVO productVO = productMapper.queryById(id);
+        if (productVO == null) {
+            return ApiResult.error("商品不存在");
+        }
         Integer userId = productVO.getUserId();
         ProductQueryDto productQueryDto = new ProductQueryDto();
         productQueryDto.setUserId(userId);
