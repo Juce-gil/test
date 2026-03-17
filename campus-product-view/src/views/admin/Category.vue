@@ -2,8 +2,8 @@
     <el-row style="background-color: #FFFFFF;padding: 5px 0;border-radius: 5px;">
         <el-row style="padding: 10px;margin-left: 5px;">
             <el-row>
-                <el-input size="small" style="width: 166px;" v-model="categoryQueryDto.name" placeholder="商品类别名"
-                    clearable @clear="handleFilterClear">
+                <el-input size="small" style="width: 166px;" v-model="categoryQueryDto.name" placeholder="商品类别名" clearable
+                    @clear="handleFilterClear">
                     <el-button slot="append" @click="handleFilter" icon="el-icon-search"></el-button>
                 </el-input>
                 <span style="float: right;" class="edit-button" @click="add()">
@@ -17,10 +17,10 @@
                 <el-table-column prop="name" label="商品类别名"></el-table-column>
                 <el-table-column prop="isUse" width="168" label="是否启用">
                     <template slot-scope="scope">
-                        <span>{{ scope.row.isUse ? '启用' : '不启用' }}</span>
+                        {{ scope.row.isUse === true || scope.row.isUse === 1 ? '启用' : '不启用' }}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="120">
+                <el-table-column label="操作" width="170">
                     <template slot-scope="scope">
                         <span class="text-button" @click="handleEdit(scope.row)">编辑</span>
                         <span class="text-button" @click="handleDelete(scope.row)">删除</span>
@@ -33,10 +33,10 @@
                 :total="totalItems"></el-pagination>
         </el-row>
         <!-- 操作面板 -->
-        <el-dialog :show-close="false" :visible.sync="dialogCategoryOperaion" width="18%">
+        <el-dialog :show-close="false" :visible.sync="dialogCategoryOperaion" width="15%">
             <div style="padding:16px 20px;">
                 <el-row>
-                    <p>*类别名</p>
+                     <p>*类别名</p>
                     <input class="dialog-input" v-model="data.name" placeholder="商品类别名" />
                 </el-row>
                 <el-row>
@@ -115,78 +115,75 @@ export default {
                 }
             }
         },
-        /**
-         * 修改商品类别信息
-         */
+        // 修改信息
         updateOperation() {
-            // 写请求定位到【商品类别】的修改接口，这是后端提供的
-            // /category/update  --- put
-            this.$axios.put('/category/update', this.data).then(res => {
-                const { data } = res;
-                if (data.code === 200) {
-                    this.$notify.success({
-                        duration: 1000,
-                        title: '修改操作',
-                        message: data.msg
-                    });
-                    this.fetchFreshData();
-                    this.cannel();
-                }
-            }).catch(error => {
-                this.$notify.error({
+            this.$axios.put('/category/update', this.data)
+        .then(res => {
+            const { data } = res;
+            if (data.code === 200) {
+                this.$notify.success({
+                    duration: 1000,
                     title: '修改操作',
-                    message: error
+                    message: data.msg
                 });
+                this.fetchFreshData();
+                this.cannel();
+            }
+        }).catch(error => {
+            this.$notify.error({
+                title: '修改操作',
+                message: 'error'
             });
+            console.error(error);
+        });
         },
-        /**
-         * 商品类别新增
-         */
-        addOperation() {
-            // 写请求定位到【商品类别】的新增接口，这是后端提供的
-            // /category/save  --- post
-            this.$axios.post('/category/save', this.data).then(res => {
-                const { data } = res;
-                if (data.code === 200) {
-                    this.$notify.success({
-                        duration: 1000,
-                        title: '新增操作',
-                        message: data.msg
-                    });
-                    this.fetchFreshData();
-                    this.cannel();
-                } else {
-                    this.$notify.info({
-                        duration: 1000,
-                        title: '新增操作',
-                        message: data.msg
-                    });
-                }
-            }).catch(error => {
-                this.$notify.error({
+        // 商品类别新增
+addOperation() {
+    this.$axios.post('/category/save', this.data)
+        .then(res => {
+            const { data } = res;
+            if (data.code === 200) {
+                this.$notify.success({
+                    duration: 1000,
                     title: '新增操作',
-                    message: error
+                    message: data.msg
                 });
+                this.fetchFreshData();
+                this.cannel();
+            }else{  
+                this.$notify.info({
+                    duration: 1000,
+                    title: '新增操作',
+                    message: data.msg
+                });
+                
+            }
+        })
+        .catch(error => {
+            this.$notify.error({
+                title: '新增操作',
+                message: 'error'
             });
-        },
-        /**
-         * 商品类别查询
-         */
+            console.error(error);
+        });
+},
         fetchFreshData() {
-            this.categoryQueryDto.current = this.currentPage;
-            this.categoryQueryDto.size = this.pageSize;
-            this.$axios.post('/category/query', this.categoryQueryDto).then(res => {
-                const { data } = res; // 解构
-                if (data.code === 200) {
-                    this.tableData = data.data;
-                    this.totalItems = data.total;
-                }
-            }).catch(error => {
-                this.$notify.error({
-                    title: '查询操作',
-                    message: error
-                });
-            })
+                this.categoryQueryDto.current=this.currentPage;
+                this.categoryQueryDto.size =this.pageSize;
+                this.$axios.post('/category/query', this.categoryQueryDto).then(res=>{
+                    const{data}=res;
+                    if(data.code == 200){
+                        this.tableData = data.data;
+                        this.totalItems = data.total;
+                    }
+                }).catch(error=>{
+                    console.error('查询异常:', error);
+                    this.$notify.error({
+                        duration: 1000,
+                        title: '查询操作',
+                        message: '查询失败'
+                    });
+                })
         },
         add() {
             this.dialogCategoryOperaion = true;
@@ -210,12 +207,10 @@ export default {
         handleEdit(row) {
             this.dialogCategoryOperaion = true;
             this.isOperation = true;
-            row.userPwd = null;
-            this.userAvatar = row.userAvatar;
-            this.data = { ...row }
+            this.data = { ...row };
         },
         handleDelete(row) {
-            this.delectedRows.push(row);
+            this.delectedRows = [row];
             this.batchDelete();
         }
     },

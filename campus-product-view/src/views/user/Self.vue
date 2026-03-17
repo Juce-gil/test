@@ -1,267 +1,126 @@
 <template>
-    <div class="user-profile-container">
-      <!-- 头像上传区域 -->
-      <div class="avatar-section">
-        <label class="section-label">*头像</label>
-        <el-upload 
-          class="avatar-uploader" 
-          :action="uploadAction" 
-          :show-file-list="false"
-          :on-success="handleAvatarSuccess">
-          <img v-if="userAvatar" :src="userAvatar" class="avatar-image">
-          <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-        </el-upload>
-      </div>
-  
-      <!-- 基本信息区域 -->
-      <div class="info-section">
-        <div class="form-item">
-          <label class="section-label">*昵称</label>
-          <el-input 
-            v-model="userInfo.userName" 
-            placeholder="请输入昵称"
-            class="info-input"
-            clearable>
-          </el-input>
+    <div class="self-container">
+        <!-- 头像 -->
+        <div>
+            <p>*头像</p>
+            <el-upload class="avatar-uploader" action="/api/campus-product-sys/v1.0/file/upload" :show-file-list="false"
+                :on-success="handleAvatarSuccess">
+                <img v-if="userAvatar" :src="userAvatar" style="width: 88px;height: 88px;">
+                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+            </el-upload>
         </div>
-  
-        <div class="form-item">
-          <label class="section-label">*邮箱</label>
-          <el-input 
-            v-model="userInfo.userEmail" 
-            placeholder="请输入邮箱"
-            class="info-input"
-            clearable>
-          </el-input>
+        <!-- 昵称 -->
+        <div>
+            <p>*昵称</p>
+            <input class="dialog-input" style="font-size: 32px;" v-model="userInfo.userName" placeholder="请输入" />
         </div>
-      </div>
-  
-      <!-- 账号状态区域 -->
-      <div class="status-section">
-        <div class="status-item">
-          <div class="status-header">
-            <label class="section-label">*账号状态</label>
-            <el-tooltip effect="dark" content="一经封号，不可登录，不可使用系统功能" placement="right">
-              <i class="el-icon-info info-icon"></i>
-            </el-tooltip>
-          </div>
-          <div class="status-value" :class="{'banned': userInfo.isLogin}">
-            <i :class="userInfo.isLogin ? 'el-icon-warning-outline' : 'el-icon-circle-check'"></i>
-            {{ userInfo.isLogin ? '已被封禁' : '正常' }}
-          </div>
+        <!-- 邮箱 -->
+        <div>
+            <p>*邮箱</p>
+            <input class="dialog-input" style="font-size: 32px;" v-model="userInfo.userEmail" placeholder="请输入" />
         </div>
-  
-        <div class="status-item">
-          <div class="status-header">
-            <label class="section-label">*留言状态</label>
-            <el-tooltip effect="dark" content="禁言后，互动功能受限" placement="right">
-              <i class="el-icon-info info-icon"></i>
-            </el-tooltip>
-          </div>
-          <div class="status-value" :class="{'banned': userInfo.isWord}">
-            <i :class="userInfo.isWord ? 'el-icon-warning-outline' : 'el-icon-circle-check'"></i>
-            {{ userInfo.isWord ? '已被封禁' : '正常' }}
-          </div>
+        <!-- 账号状态 -->
+        <div>
+            <div>
+                <p style="font-size: 16px;">
+                    *账号状态
+                    <el-tooltip class="item" effect="dark" content="一经封号，不可登录，不可使用系统功能" placement="right">
+                        <i class="el-icon-info"></i>
+                    </el-tooltip>
+                </p>
+                <div>
+                    <span v-if="!userInfo.isLogin" style="font-size: 14px;color: rgb(27, 156, 53);"><i
+                            style="margin-right: 6px;" class="el-icon-circle-check"></i>正常</span>
+                    <span v-else
+                        style="font-size: 14px;color: rgb(230, 63, 49);text-decoration: underline;text-decoration-style: dashed;">
+                        <i style="margin-right: 6px;" class="el-icon-warning-outline"></i>已被封禁</span>
+                </div>
+            </div>
+            <div>
+                <p style="font-size: 16px;">
+                    *留言状态
+                    <el-tooltip class="item" effect="dark" content="禁言后，互动功能受限" placement="right">
+                        <i class="el-icon-info"></i>
+                    </el-tooltip>
+                </p>
+                <div>
+                    <span v-if="!userInfo.isWord" style="font-size: 14px;color: rgb(27, 156, 53);">
+                        <i style="margin-right: 6px;" class="el-icon-circle-check"></i>正常</span>
+                    <span v-else
+                        style="font-size: 14px;color: rgb(230, 63, 49);text-decoration: underline;text-decoration-style: dashed;">
+                        <i style="margin-right: 6px;" class="el-icon-warning-outline"></i>已被封禁</span>
+                </div>
+            </div>
+            <div style="margin-top: 20px;text-align: center;">
+                <el-button type="primary" class="customer" size="mini" @click="postInfo" round>立即修改</el-button>
+            </div>
         </div>
-      </div>
-  
-      <!-- 提交按钮 -->
-      <div class="submit-section">
-        <el-button 
-          type="primary" 
-          @click="postInfo" 
-          class="submit-button"
-          :loading="submitting">
-          立即修改
-        </el-button>
-      </div>
     </div>
-  </template>
-  
-  <script>
-  import { API_BASE_URL } from "@/utils/request";
-
-  export default {
+</template>
+<script>
+export default {
     name: "Self",
     data() {
-      return {
-        uploadAction: API_BASE_URL + "/file/upload",
-        userInfo: {
-          userName: '',
-          userEmail: '',
-          isLogin: false,
-          isWord: false
-        },
-        userAvatar: '',
-        submitting: false
-      }
+        return {
+            userInfo: {},
+            userAvatar: '',
+        }
     },
     created() {
-      this.auth();
+        this.auth();
     },
     methods: {
-      // 提交个人信息修改
-      async postInfo() {
-        this.submitting = true;
-        
-        try {
-          const userUpdateDTO = {
-            userAvatar: this.userAvatar,
-            userName: this.userInfo.userName,
-            userEmail: this.userInfo.userEmail
-          }
-          
-          const { data } = await this.$axios.put('/user/update', userUpdateDTO);
-          
-          this.$notify({
-            position: 'bottom-right',
-            duration: 1000,
-            title: '编辑个人信息',
-            message: data.code === 200 ? '编辑成功' : '编辑失败',
-            type: data.code === 200 ? 'success' : 'error'
-          });
-          
-          if (data.code === 200) {
-            await this.auth();
-          }
-        } catch (error) {
-          console.error('修改信息失败:', error);
-        } finally {
-          this.submitting = false;
-        }
-      },
-      
-      // 头像上传
-      handleAvatarSuccess(res) {
-        this.$notify({
-          duration: 1500,
-          title: '头像上传',
-          message: res.code === 200 ? '上传成功' : '上传失败',
-          type: res.code === 200 ? 'success' : 'error'
-        });
-        
-        if (res.code === 200) {
-          this.userAvatar = res.data;
-        }
-      },
-      
-      // 获取用户信息
-      async auth() {
-        try {
-          const { data } = await this.$axios.get('/user/auth');
-          
-          if (data.code !== 200) {
-            this.$router.push('/');
-          } else {
-            this.userInfo = data.data;
-            this.userAvatar = data.data.userAvatar;
-          }
-        } catch (error) {
-          console.error('获取用户信息失败:', error);
-          this.$router.push('/');
-        }
-      }
+        // 提交个人信息修改
+        async postInfo() {
+            const { userName, userEmail } = this.userInfo;
+            const userUpdateDTO = {
+                userAvatar: this.userAvatar,
+                userName,
+                userEmail
+            }
+            const { data } = await this.$axios.put('/user/update', userUpdateDTO);
+            this.$notify({
+                position: 'buttom-right',
+                duration: 1000,
+                title: '编辑个人信息',
+                message: data.code === 200 ? '编辑成功' : '编辑失败',
+                type: data.code === 200 ? 'success' : 'error'
+            });
+            // 返回首页
+            if (data.code === 200) {
+                this.auth();
+            }
+        },
+        // 头像上传
+        handleAvatarSuccess(res, file) {
+            this.$notify({
+                duration: 1500,
+                title: '头像上传',
+                message: res.code === 200 ? '上传成功' : '上传失败',
+                type: res.code === 200 ? 'success' : 'error'
+            });
+            // 上传成功则更新用户头像
+            if (res.code === 200) {
+                this.userAvatar = res.data;
+            }
+        },
+        // Token 检验，取得用户信息
+        async auth() {
+            const { data } = await this.$axios.get('/user/auth');
+            if (data.code !== 200) { // Token校验异常
+                this.$router.push('/');
+            } else {
+                this.userInfo = data.data;
+                this.userAvatar = data.data.userAvatar;
+            }
+        },
     }
-  };
-  </script>
-  
-  <style scoped lang="scss">
-  .user-profile-container {
-    max-width: 500px;
+};
+</script>
+<style scoped lang="scss">
+.self-container {
+    width: 500px;
     margin: 0 auto;
-    padding: 20px;
-  }
-  
-  .section-label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #606266;
-    font-weight: 500;
-  }
-  
-  .avatar-section {
-    margin-bottom: 20px;
-    text-align: center;
-    
-    .avatar-uploader {
-      display: inline-block;
-      
-      .avatar-image {
-        width: 88px;
-        height: 88px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-      
-      .avatar-uploader-icon {
-        font-size: 28px;
-        color: #8c939d;
-        width: 88px;
-        height: 88px;
-        line-height: 88px;
-        text-align: center;
-        border: 1px dashed #d9d9d9;
-        border-radius: 50%;
-      }
-    }
-  }
-  
-  .info-section {
-    margin-bottom: 20px;
-    
-    .form-item {
-      margin-bottom: 20px;
-      
-      .info-input {
-        width: 100%;
-      }
-    }
-  }
-  
-  .status-section {
-    margin-bottom: 30px;
-    
-    .status-item {
-      margin-bottom: 20px;
-      
-      .status-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-        
-        .info-icon {
-          margin-left: 5px;
-          color: #909399;
-          cursor: pointer;
-        }
-      }
-      
-      .status-value {
-        font-size: 14px;
-        color: #67C23A;
-        
-        i {
-          margin-right: 6px;
-        }
-        
-        &.banned {
-          color: #F56C6C;
-          text-decoration: underline;
-          text-decoration-style: dashed;
-        }
-      }
-    }
-  }
-  
-  .submit-section {
-    text-align: center;
-    
-    .submit-button {
-      width: 200px;
-      padding: 12px 0;
-      font-size: 16px;
-      border-radius: 20px;
-    }
-  }
-  </style>
+    padding: 0;
+}
+</style>

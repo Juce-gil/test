@@ -1,357 +1,368 @@
 <template>
-    <div>
-        <div class="nav-category">
-            <div class="left">
-                <span class="tab"
-                    :class="{ active: categorySelectedItem.name === isUseCategory.name }"
-                    @click="categorySelected(isUseCategory)" :key="index"
-                    v-for="(isUseCategory, index) in isUseCategoryList">
-                    {{ isUseCategory.name }}
-                </span>
-            </div>
-            <div class="right">
-                <div class="filter-group">
-                    <span class="bargain">
-                        <span class="pill" :class="{ active: bargainSelectedItem.name === bargain.name }"
-                            @click="bargainSelected(bargain)" v-for="(bargain, index) in bargainStatus" :key="index">
-                            {{ bargain.name }}
-                        </span>
-                    </span>
-                </div>
-                <div class="filter-group">
-                    <el-date-picker class="filter-control" style="width: 220px;" @change="fetchFreshData" size="small"
-                    v-model="searchTime" type="daterange" range-separator="至" start-placeholder="发布开始"
-                    end-placeholder="发布结束">
-                    </el-date-picker>
-                    <el-select class="filter-control" style="width: 120px;" @change="fetchFreshData" size="small"
-                    v-model="productQueryDto.categoryId" placeholder="商品类别">
-                    <el-option v-for="item in categoryList" :key="item.id" :label="item.name" :value="item.id">
-                    </el-option>
-                    </el-select>
-                </div>
-            </div>
-        </div>
-        <div class="product-list">
-            <el-row v-if="productList.length === 0">
-                <el-empty description="暂无商品信息"></el-empty>
-            </el-row>
-            <el-row v-else :gutter="16">
-                <el-col @click.native="route(product)" :span="6" v-for="(product, index) in productList" :key="index">
-                    <div class="item-product">
-                        <div class="cover">
-                            <img :src="coverListParse(product)" alt="" srcset="">
-                        </div>
-                        <div class="meta-row">
-                            <span class="bargain-tag" :class="{ off: !product.isBargain }">{{ product.isBargain ? '支持砍价' : '不支持砍价' }}</span>
-                            <span class="love">{{ product.likeNumber }}人想要</span>
-                        </div>
-                        <div class="title">
-                            {{ product.name }}
-                        </div>
-                        <div class="price-row">
-                            <span class="decimel-symbol">¥</span>
-                            <span class="price">{{ product.price }}</span>
-                        </div>
-                        <div class="info">
-                            <img :src="product.userAvatar" alt="" srcset="">
-                            <span>{{ product.userName }}</span>
-                        </div>
-                    </div>
-                </el-col>
-            </el-row>
-        </div>
-    </div>
-</template>
-<script>
-export default {
-    name: 'Product',
-    data() {
-        return {
-            categoryList: [], // 存储的商品类别数组
-            isUseCategoryList: [], // 存储的启用的类别数组
-            categorySelectedItem: {},
-            productQueryDto: {}, // 商品查询条件类
-            productList: [],// 存储后端返回的商品数据列表
-            bargainSelectedItem: {},
-            searchTime: [],
-            bargainStatus: [{ isBargain: null, name: '全部' }, { isBargain: true, name: '支持砍价' }, { isBargain: false, name: '不支持砍价' }]
+  <div class="user-product">
+    <!-- 查询栏 -->
+    <el-card shadow="never" class="query-card">
+      <el-row :gutter="12" class="query-row">
+        <el-col :span="5">
+          <el-select
+            size="small"
+            v-model="query.isBargain"
+            placeholder="全部"
+            clearable
+            style="width: 100%;"
+          >
+            <el-option label="全部" :value="null"></el-option>
+            <el-option label="支持砍价" :value="true"></el-option>
+            <el-option label="不支持砍价" :value="false"></el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="5">
+          <el-select
+            size="small"
+            v-model="query.categoryId"
+            placeholder="商品类别"
+            clearable
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="item in categoryList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-col>
+        <el-col :span="6">
+          <el-input
+            size="small"
+            v-model="query.name"
+            placeholder="商品名称"
+            clearable
+            style="width: 100%;"
+            @keyup.enter.native="handleFilter"
+          />
+        </el-col>
+        <el-col :span="4">
+          <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilter">查询</el-button>
+          <el-button size="small" @click="handleFilterClear">重置</el-button>
+        </el-col>
+      </el-row>
+    </el-card>
 
-        };
+    <!-- 商品列表 -->
+    <el-card shadow="never" class="list-card">
+      <div v-if="loading" class="loading-wrap">
+        <i class="el-icon-loading"></i> 加载中...
+      </div>
+      <div v-else-if="!productList.length" class="empty-wrap">
+        暂无商品
+      </div>
+      <el-row v-else :gutter="16" class="product-grid">
+        <el-col
+          v-for="item in productList"
+          :key="item.id"
+          :xs="12"
+          :sm="8"
+          :md="6"
+          class="product-col"
+        >
+          <div class="product-card" @click="goDetail(item)">
+            <div class="card-cover">
+              <el-image
+                v-if="item.coverList"
+                :src="getImageUrl(item.coverList)"
+                fit="cover"
+                class="cover-img"
+              >
+                <div slot="error" class="cover-error">暂无图片</div>
+              </el-image>
+              <div v-else class="cover-placeholder">暂无图片</div>
+              <span v-if="item.isBargain === true || item.isBargain === 1" class="tag-bargain">支持砍价</span>
+            </div>
+            <div class="card-body">
+              <div class="card-name" :title="item.name">{{ item.name }}</div>
+              <div class="card-meta">
+                <span class="card-category">{{ getCategoryName(item.categoryId) }}</span>
+                <span class="card-old">新旧 {{ item.oldLevel || '-' }}/9</span>
+              </div>
+              <div class="card-price">¥ {{ item.price != null ? item.price : '-' }}</div>
+              <div class="card-publisher">
+                <el-avatar
+                  :size="24"
+                  :src="getPublisherAvatar(item)"
+                  class="publisher-avatar"
+                >
+                  <i class="el-icon-user-solid"></i>
+                </el-avatar>
+                <span class="publisher-name">{{ getPublisherName(item) }}</span>
+              </div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <el-pagination
+        v-if="total > 0"
+        class="pagination"
+        :current-page="currentPage"
+        :page-sizes="[12, 24, 48]"
+        :page-size="pageSize"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </el-card>
+  </div>
+</template>
+
+<script>
+import { toFullImageUrl } from '@/utils/imageUrl'
+
+export default {
+  name: 'Product',
+  data() {
+    return {
+      query: {
+        name: '',
+        categoryId: null,
+        isBargain: null
+      },
+      productList: [],
+      categoryList: [],
+      currentPage: 1,
+      pageSize: 12,
+      total: 0,
+      loading: false
+    };
+  },
+  created() {
+    this.fetchCategoryList();
+    this.fetchProductList();
+  },
+  methods: {
+    getImageUrl(url) {
+      return toFullImageUrl(url)
     },
-    created() {
-        this.fetchFreshData();
-        this.fetchCategoryList();
-        // 页面加载时，默认不启用砍价查询条件
-        this.bargainSelected(this.bargainStatus[0]);
+    getCategoryName(categoryId) {
+      if (categoryId == null) return '-';
+      const item = this.categoryList.find(c => c.id === categoryId);
+      return item ? item.name : String(categoryId);
     },
-    methods: {
-        route(product) {
-            // 跳转商品详情
-            this.$router.push('/product-detail?productId=' + product.id);
-        },
-        coverListParse(product) {
-            if (product.coverList === null) {
-                return;
-            }
-            const newCoverList = product.coverList.split(',');
-            return newCoverList[0];
-        },
-        /**
-         * 商品砍价选中事件
-         * @param {*} bargain 
-         */
-        bargainSelected(bargain) {
-            this.bargainSelectedItem = bargain;
-            this.productQueryDto.isBargain = bargain.isBargain;
-            this.fetchFreshData();
-        },
-        /**
-         * 查询商品数据
-         */
-        async fetchFreshData() {
-            let startTime = null;
-            let endTime = null;
-            if (this.searchTime != null && this.searchTime.length === 2) {
-                const [startDate, endDate] = await Promise.all(this.searchTime.map(date => date.toISOString()));
-                startTime = `${startDate.split('T')[0]}T00:00:00`;
-                endTime = `${endDate.split('T')[0]}T23:59:59`;
-            }
-            // this.productQueryDto.current = this.currentPage;
-            // this.productQueryDto.size = this.pageSize;
-            this.productQueryDto.startTime = startTime;
-            this.productQueryDto.endTime = endTime;
-            this.$axios.post('/product/query', this.productQueryDto).then(res => {
-                const { data } = res; // 解构
-                if (data.code === 200) {
-                    this.productList = data.data;
-                }
-            }).catch(error => {
-                console.log("商品查询异常：", error);
-            })
-        },
-        /**
-         * 商品类别选中事件
-         * @param {*} category 
-         */
-        categorySelected(category) {
-            this.categorySelectedItem = category;
-            this.productQueryDto.categoryId = category.id;
-            // 查询对应的商品分类下面的商品数据
-            this.fetchFreshData();
-        },
-        /**
-         * 加载商品类别数据
-         */
-        fetchCategoryList() {
-            this.$axios.post('/category/query', {}).then(res => {
-                const { data } = res; // 解构
-                if (data.code === 200) {
-                    this.categoryList = data.data;
-                    this.isUseCategoryList = data.data.filter(category => category.isUse);
-                    this.isUseCategoryList.unshift({ id: null, name: '全部' });
-                    this.categorySelected(this.isUseCategoryList[0]);
-                }
-            }).catch(error => {
-                console.log("商品类别查询异常：", error);
-            })
-        },
+    getPublisherName(item) {
+      if (!item) return '-';
+      if (item.userName) return item.userName;
+      if (item.userNickName) return item.userNickName;
+      if (item.userId != null) return String(item.userId);
+      return '-';
+    },
+    getPublisherAvatar(item) {
+      if (!item) return '';
+      if (item.userAvatar) {
+        return this.getImageUrl(item.userAvatar);
+      }
+      return '';
+    },
+    fetchCategoryList() {
+      this.$axios
+        .post('/category/query', { size: 200 })
+        .then(res => {
+          const { data } = res;
+          if (data && data.code === 200 && Array.isArray(data.data)) {
+            this.categoryList = (data.data || []).filter(
+              item => item.isUse === true || item.isUse === 1
+            );
+          } else {
+            this.categoryList = [];
+          }
+        })
+        .catch(() => {
+          this.categoryList = [];
+        });
+    },
+    fetchProductList() {
+      this.loading = true;
+      const body = {
+        name: this.query.name || undefined,
+        current: this.currentPage,
+        size: this.pageSize
+      };
+      if (this.query.categoryId != null && this.query.categoryId !== '') {
+        body.categoryId = Number(this.query.categoryId);
+      }
+      if (this.query.isBargain != null && this.query.isBargain !== '') {
+        body.isBargain = this.query.isBargain === true || this.query.isBargain === 1 ? 1 : 0;
+      }
+      this.$axios
+        .post('/product/query', body)
+        .then(res => {
+          const { data } = res;
+          if (data && data.code === 200) {
+            this.productList = data.data || [];
+            this.total = data.total != null ? data.total : 0;
+          } else {
+            this.productList = [];
+            this.total = 0;
+          }
+        })
+        .catch(() => {
+          this.productList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    handleFilter() {
+      this.currentPage = 1;
+      this.fetchProductList();
+    },
+    handleFilterClear() {
+      this.query.name = '';
+      this.query.categoryId = null;
+      this.query.isBargain = null;
+      this.currentPage = 1;
+      this.fetchProductList();
+    },
+    handleSizeChange(val) {
+      this.pageSize = val;
+      this.currentPage = 1;
+      this.fetchProductList();
+    },
+    handleCurrentChange(val) {
+      this.currentPage = val;
+      this.fetchProductList();
+    },
+    goDetail(item) {
+      if (item && item.id != null) {
+        this.$router.push({ path: '/product/detail', query: { id: item.id } });
+      }
     }
+  }
 };
 </script>
+
 <style scoped lang="scss">
-.cover {
-    img {
-        width: 100%;
-        height: 200px;
-        border-radius: 12px;
-        object-fit: cover;
-    }
+.user-product {
+  padding: 0 0 20px;
 }
-
-.meta-row{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding-top: 10px;
+.query-card {
+  margin-bottom: 16px;
 }
-
-.title {
-    font-size: 16px;
-    line-height: 22px;
-    color: #1f1f1f;
-    font-weight: 700;
-    margin-top: 6px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.query-row {
+  align-items: center;
 }
-
-.decimel-symbol {
-    font-size: 14px;
-    color: #ff4f24;
-    font-weight: 800;
+.list-card {
+  min-height: 200px;
 }
-
-.price-row{
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-    padding: 10px 0 12px 0;
+.loading-wrap,
+.empty-wrap {
+  text-align: center;
+  padding: 40px;
+  color: #909399;
 }
-.price {
-    font-size: 24px;
-    color: #ff4f24;
-    font-weight: 800;
-    margin-right: 6px;
+.product-grid {
+  margin-bottom: 20px;
 }
-
-.love {
-    font-size: 14px;
-    color: #999;
+.product-col {
+  margin-bottom: 16px;
 }
-
-.bargain-tag{
-    font-size: 12px;
-    font-weight: 700;
-    background-color: rgba(245, 194, 66, 0.22);
-    color: rgb(123, 88, 10);
-    border: 1px solid rgba(245, 194, 66, 0.35);
-    border-radius: 999px;
-    padding: 2px 10px;
-    line-height: 18px;
-    white-space: nowrap;
+.product-card {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  }
 }
-.bargain-tag.off{
-    background-color: rgba(153, 153, 153, 0.12);
-    border: 1px solid rgba(153, 153, 153, 0.18);
-    color: rgba(0,0,0,0.55);
+.card-cover {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  background: #f5f7fa;
+  overflow: hidden;
 }
-
-.info {
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    gap: 8px;
-    padding-top: 8px;
-
-    img {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-
-    span {
-        font-size: 13px;
-        color: rgba(0,0,0,0.65);
-        font-weight: 600;
-    }
+.cover-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
-
-.bargain {
-    display: inline-block;
-    font-size: 12px;
-    background-color: rgb(246, 246, 246);
-    line-height: 24px;
-    padding-inline: 10px;
-    padding-block: 4px;
-    border-radius: 999px;
-    cursor: pointer;
-
-    span {
-        display: inline-block;
-        padding-inline: 10px;
-        border-radius: 999px;
-    }
+.cover-img ::v-deep .el-image__inner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.pill{
-    color: rgba(0,0,0,0.65);
-    user-select: none;
+.cover-error,
+.cover-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+  font-size: 12px;
 }
-.pill.active{
-    color: rgb(255, 255, 255);
-    background-color: rgb(51, 51, 51);
+.tag-bargain {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  background: #e6a23c;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 4px;
 }
-
-.product-list {
-    padding-block: 20px;
-
-    .item-product {
-        padding: 12px 12px 14px 12px;
-        box-sizing: border-box;
-        border-radius: 16px;
-        transition: all .25s ease;
-        cursor: pointer;
-        background: rgb(255,255,255);
-        border: 1px solid rgba(0,0,0,0.06);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-        height: 100%;
-    }
-
-    .item-product:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
+.card-body {
+  padding: 12px;
 }
-
-.nav-category {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 18px;
-
-    .left {
-        display: flex;
-        justify-content: left;
-        gap: 8px;
-        flex-wrap: wrap;
-
-        .tab {
-            display: inline-flex;
-            align-items: center;
-            background-color: rgba(0,0,0,0.04);
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 999px;
-            user-select: none;
-            font-size: 13px;
-            color: rgba(0,0,0,0.65);
-        }
-
-        .tab:hover {
-            background-color: rgba(0,0,0,0.06);
-        }
-        .tab.active{
-            background-color: rgb(255, 209, 80);
-            color: rgb(51, 51, 51);
-            font-weight: 800;
-        }
-    }
-
-    .right{
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    .filter-group{
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding-left: 10px;
-        border-left: 1px solid rgba(0,0,0,0.06);
-    }
-    .filter-group:first-child{
-        border-left: none;
-        padding-left: 0;
-    }
-    .filter-control :deep(.el-input__inner){
-        border-radius: 12px;
-        height: 34px;
-        line-height: 34px;
-    }
+.card-name {
+  font-size: 14px;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+.card-meta {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+.card-category {
+  margin-right: 8px;
+}
+.card-price {
+  font-size: 16px;
+  color: #f56c6c;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.card-publisher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.publisher-avatar {
+  flex-shrink: 0;
+}
+.publisher-name {
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.pagination {
+  margin-top: 16px;
+  text-align: right;
 }
 </style>

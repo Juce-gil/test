@@ -1,562 +1,373 @@
 <template>
-  <div class="user-management-container">
-    <!-- 搜索卡片 -->
-    <el-card class="search-card" shadow="never">
-      <div class="search-content">
-        <el-select v-model="userQueryDto.isLogin" placeholder="登录状态" size="medium"
-          style="width: 120px; margin-right: 12px;" @change="fetchFreshData" clearable>
-          <el-option v-for="item in loginStatuList" :key="item.value" :label="item.label"
-            :value="item.value"></el-option>
-        </el-select>
-
-        <el-select v-model="userQueryDto.isWord" placeholder="禁言状态" size="medium"
-          style="width: 120px; margin-right: 12px;" @change="fetchFreshData" clearable>
-          <el-option v-for="item in wordStatuList" :key="item.value" :label="item.label"
-            :value="item.value"></el-option>
-        </el-select>
-
-        <el-date-picker v-model="searchTime" type="daterange" range-separator="至" start-placeholder="注册开始日期"
-          end-placeholder="注册结束日期" size="medium" style="width: 360px; margin-right: 12px;" @change="fetchFreshData"
-          value-format="yyyy-MM-dd" :picker-options="pickerOptions"></el-date-picker>
-
-        <el-input v-model="userQueryDto.userName" placeholder="请输入用户名" clearable size="medium" style="width: 220px;"
-          @clear="handleFilterClear" @keyup.enter="handleFilter">
-          <template #append>
-            <el-button type="primary" icon="el-icon-search" @click="handleFilter"></el-button>
-          </template>
-        </el-input>
-
-        <el-button type="primary" class="customer" icon="el-icon-plus" style="margin-left: 12px;"
-          @click="add">新增用户</el-button>
-      </div>
-    </el-card>
-
-    <!-- 用户卡片容器 -->
-    <div class="user-cards-container">
-      <el-card v-for="(user, index) in tableData" :key="index" class="user-card" shadow="hover">
-        <div class="user-header">
-          <el-avatar :src="user.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
-            size="medium"></el-avatar>
-          <div class="user-info">
-            <div class="user-name">{{ user.userName }}</div>
-            <div class="user-account">{{ user.userAccount }}</div>
-          </div>
-        </div>
-
-        <div class="user-details">
-          <div class="detail-item">
-            <i class="el-icon-message"></i>
-            <span>{{ user.userEmail || '未设置' }}</span>
-          </div>
-          <div class="detail-item">
-            <i class="el-icon-time"></i>
-            <span>{{ formatTime(user.createTime) }}</span>
-          </div>
-        </div>
-
-        <div class="user-status">
-          <el-tag :type="user.userRole === 1 ? 'danger' : 'success'" size="small">
-            {{ user.userRole === 1 ? '管理员' : '用户' }}
-          </el-tag>
-
-          <el-tag :type="user.isLogin ? 'danger' : 'success'" size="small">
-            {{ user.isLogin ? '已封号' : '账号状态正常' }}
-          </el-tag>
-
-          <el-tag :type="user.isWord ? 'warning' : 'success'" size="small">
-            {{ user.isWord ? '已禁言' : '留言状态正常' }}
-          </el-tag>
-        </div>
-
-        <div class="user-actions">
-          <el-tooltip content="修改状态" placement="top">
-            <el-button type="primary" icon="el-icon-setting" circle size="mini" @click="handleStatus(user)"></el-button>
-          </el-tooltip>
-
-          <el-tooltip content="编辑用户" placement="top">
-            <el-button type="warning" icon="el-icon-edit" circle size="mini" @click="handleEdit(user)"></el-button>
-          </el-tooltip>
-
-          <el-tooltip content="删除用户" placement="top">
-            <el-button type="danger" icon="el-icon-delete" circle size="mini" @click="handleDelete(user)"></el-button>
-          </el-tooltip>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 分页区域 -->
-    <div class="pagination-area">
-      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage"
-        :page-sizes="[12, 24, 48, 96]" :page-size="pageSize" layout="total, sizes, prev, pager, next, jumper"
-        :total="totalItems"></el-pagination>
-    </div>
-
-    <!-- 用户操作对话框 -->
-    <el-dialog :title="isOperation ? '编辑用户' : '新增用户'" :visible.sync="dialogUserOperaion" width="500px"
-      :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="用户头像">
-          <el-upload class="avatar-uploader" :action="uploadAction"
-            :show-file-list="false" :on-success="handleAvatarSuccess">
-            <img v-if="userAvatar" :src="userAvatar" class="avatar">
-            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
-          </el-upload>
-        </el-form-item>
-
-        <el-form-item label="用户名">
-          <el-input style="width: 90%;" v-model="data.userName" placeholder="请输入用户名"></el-input>
-        </el-form-item>
-
-        <el-form-item label="账号">
-          <el-input style="width: 90%;" v-model="data.userAccount" placeholder="请输入账号"></el-input>
-        </el-form-item>
-
-        <el-form-item label="邮箱">
-          <el-input style="width: 90%;" v-model="data.userEmail" placeholder="请输入邮箱"></el-input>
-        </el-form-item>
-
-        <el-form-item label="密码">
-          <el-input style="width: 90%;" v-model="userPwd" type="password" placeholder="请输入密码"></el-input>
-        </el-form-item>
-      </el-form>
-
-      <span slot="footer" class="dialog-footer">
-        <el-button class="customer" @click="cannel">取 消</el-button>
-        <el-button class="customer" type="primary" @click="isOperation ? updateOperation() : addOperation()">
-          确 定
-        </el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 状态设置对话框 -->
-    <el-dialog title="用户状态设置" :visible.sync="dialogStatusOperation" width="400px" :close-on-click-modal="false">
-      <el-form label-width="120px">
-        <el-form-item label="封号状态">
-          <el-switch v-model="data.isLogin" active-text="封号" inactive-text="正常"></el-switch>
-        </el-form-item>
-
-        <el-form-item label="禁言状态">
-          <el-switch v-model="data.isWord" active-text="禁言" inactive-text="正常"></el-switch>
-        </el-form-item>
-
-        <el-form-item label="管理员设置">
-          <el-switch v-model="isAdmin" active-text="管理员" inactive-text="普通用户"></el-switch>
-        </el-form-item>
-      </el-form>
-
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="cannel">取 消</el-button>
-        <el-button type="primary" @click="comfirmStatus">确 定</el-button>
-      </span>
-    </el-dialog>
-  </div>
+    <el-row style="background-color: #FFFFFF;padding: 5px 0;border-radius: 5px;">
+        <el-row style="padding: 10px;margin-left: 5px;">
+            <el-row>
+                <el-select style="width: 100px;margin-right: 5px;" @change="fetchFreshData" size="small"
+                    v-model="userQueryDto.isLogin" placeholder="登录状态">
+                    <el-option v-for="item in loginStatuList" :key="item.value" :label="item.label" :value="item.value">
+                    </el-option>
+                </el-select>
+                <el-select style="width: 100px;margin-right: 5px;" @change="fetchFreshData" size="small"
+                    v-model="userQueryDto.isWord" placeholder="禁言状态">
+                    <el-option v-for="item in wordStatuList" :key="item.value" :label="item.label" :value="item.value">
+                    </el-option>
+                </el-select>
+                <el-date-picker style="width: 216px;margin-right: 5px;" @change="fetchFreshData" size="small"
+                    v-model="searchTime" type="daterange" range-separator="至" start-placeholder="注册开始"
+                    end-placeholder="注册结束">
+                </el-date-picker>
+                <el-input size="small" style="width: 166px;" v-model="userQueryDto.userName" placeholder="用户名" clearable
+                    @clear="handleFilterClear">
+                    <el-button slot="append" @click="handleFilter" icon="el-icon-search"></el-button>
+                </el-input>
+                <span style="float: right;" class="edit-button" @click="add()">
+                    新增用户
+                </span>
+            </el-row>
+        </el-row>
+        <el-row style="margin: 0 22px;border-top: 1px solid rgb(245,245,245);">
+            <el-table :stripe="true" :data="tableData" style="width: 100%">
+                <el-table-column prop="userAvatar" width="68" label="头像">
+                    <template slot-scope="scope">
+                        <el-avatar :size="25" :src="scope.row.userAvatar" style="margin-top: 10px;"></el-avatar>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="userName" label="名称"></el-table-column>
+                <el-table-column prop="userAccount" width="128" label="账号"></el-table-column>
+                <el-table-column prop="userEmail" width="168" label="邮箱"></el-table-column>
+                <el-table-column prop="userRole" width="68" label="角色">
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.userRole === 1 ? '管理员' : '用户' }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="isLogin" width="108" label="封号">
+                    <template slot-scope="scope">
+                        <i v-if="scope.row.isLogin" style="margin-right: 5px;" class="el-icon-warning"></i>
+                        <i v-else style="margin-right: 5px;color: rgb(253, 199, 50);" class="el-icon-success"></i>
+                        <el-tooltip v-if="scope.row.isLogin" class="item" effect="dark"
+                            content="账号一经封号，不可登录系统。经由管理员解禁后，方可登录" placement="bottom-end">
+                            <span style="text-decoration: underline;text-decoration-style: dashed;">已封号</span>
+                        </el-tooltip>
+                        <span v-else>正常</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="isWord" width="108" label="禁言">
+                    <template slot-scope="scope">
+                        <i v-if="scope.row.isWord" style="margin-right: 5px;" class="el-icon-warning"></i>
+                        <i v-else style="margin-right: 5px;color: rgb(253, 199, 50);" class="el-icon-success"></i>
+                        <el-tooltip v-if="scope.row.isWord" class="item" effect="dark"
+                            content="账号一经禁言，不可评论互动。经由管理员解禁后，方可评论" placement="bottom-end">
+                            <span style="text-decoration: underline;text-decoration-style: dashed;">已禁言</span>
+                        </el-tooltip>
+                        <span v-else>正常</span>
+                    </template>
+                </el-table-column>
+                <el-table-column :sortable="true" prop="createTime" width="168" label="注册于"></el-table-column>
+                <el-table-column label="操作" width="170">
+                    <template slot-scope="scope">
+                        <span class="text-button" @click="handleStatus(scope.row)">账号状态</span>
+                        <span class="text-button" @click="handleEdit(scope.row)">编辑</span>
+                        <span class="text-button" @click="handleDelete(scope.row)">删除</span>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-pagination style="margin:10px 0;float: right;" @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" :current-page="currentPage" :page-sizes="[10, 20]"
+                :page-size="pageSize" layout="total, sizes, prev, pager, next, jumper"
+                :total="totalItems"></el-pagination>
+        </el-row>
+        <!-- 操作面板 -->
+        <el-dialog :show-close="false" :visible.sync="dialogUserOperaion" width="25%">
+            <div style="padding:16px 20px;">
+                <el-row>
+                    <p>用户头像</p>
+                    <el-upload class="avatar-uploader"
+                        action="/api/campus-product-sys/v1.0/file/upload" :show-file-list="false"
+                        :on-success="handleAvatarSuccess">
+                        <img v-if="userAvatar" :src="userAvatar" class="dialog-avatar">
+                        <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                    </el-upload>
+                </el-row>
+                <el-row>
+                    <span class="dialog-hover">用户名</span>
+                    <input class="dialog-input" v-model="data.userName" placeholder="用户名" />
+                    <span class="dialog-hover">账号</span>
+                    <input class="dialog-input" v-model="data.userAccount" placeholder="账号" />
+                    <span class="dialog-hover">邮箱</span>
+                    <input class="dialog-input" v-model="data.userEmail" placeholder="邮箱" />
+                    <span class="dialog-hover">密码</span>
+                    <input class="dialog-input" v-model="userPwd" type="password" placeholder="密码" />
+                </el-row>
+            </div>
+            <span slot="footer" class="dialog-footer" style="margin-top: 10px;">
+                <span class="channel-button" @click="cannel()">
+                    取消操作
+                </span>
+                <span v-if="!isOperation" class="edit-button" @click="addOperation()">
+                    确定新增
+                </span>
+                <span v-else class="edit-button" @click="updateOperation()">
+                    确定修改
+                </span>
+            </span>
+        </el-dialog>
+        <el-dialog :show-close="false" :visible.sync="dialogStatusOperation" width="18%">
+            <div style="padding:30px 20px 0 20px;">
+                <el-row>
+                    <p>*封号状态</p>
+                    <el-switch v-model="data.isLogin" active-text="封号" inactive-text="正常状态">
+                    </el-switch>
+                </el-row>
+                <el-row style="margin: 20px 0;">
+                    <p>*禁言状态</p>
+                    <el-switch v-model="data.isWord" active-text="禁言" inactive-text="正常状态">
+                    </el-switch>
+                </el-row>
+                <el-row style="margin: 20px 0;">
+                    <p>*是否设置为管理员</p>
+                    <el-switch v-model="isAdmin" active-text="管理员" inactive-text="普通用户">
+                    </el-switch>
+                </el-row>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="channel-button" @click="cannel()">
+                    取消操作
+                </span>
+                <span class="edit-button" @click="comfirmStatus()">
+                    确定设置
+                </span>
+            </span>
+        </el-dialog>
+    </el-row>
 </template>
 
 <script>
-import { API_BASE_URL } from "@/utils/request";
 export default {
-  data() {
-    return {
-      uploadAction: API_BASE_URL + "/file/upload",
-      userPwd: '',
-      userAvatar: '',
-      data: {},
-      filterText: '',
-      isAdmin: false,
-      currentPage: 1,
-      pageSize: 12,
-      totalItems: 0,
-      dialogStatusOperation: false,
-      dialogUserOperaion: false,
-      isOperation: false,
-      tableData: [],
-      searchTime: [],
-      selectedRows: [],
-      status: null,
-      userQueryDto: {},
-      loginStatuList: [
-        { value: null, label: '全部' },
-        { value: 0, label: '正常' },
-        { value: 1, label: '封号' }
-      ],
-      wordStatuList: [
-        { value: null, label: '全部' },
-        { value: 0, label: '正常' },
-        { value: 1, label: '禁言' }
-      ],
-      rolesList: [
-        { value: null, label: '全部' },
-        { value: 2, label: '用户' },
-        { value: 1, label: '管理员' }
-      ],
-      pickerOptions: {
-        disabledDate(time) {
-          return time.getTime() > Date.now();
-        },
-        shortcuts: [
-          {
-            text: '最近一周',
-            onClick(picker) {
-              const end = new Date();
-              const start = new Date();
-              start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
-              picker.$emit('pick', [start, end]);
-            }
-          },
-          {
-            text: '最近一个月',
-            onClick(picker) {
-              const end = new Date();
-              const start = new Date();
-              start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
-              picker.$emit('pick', [start, end]);
-            }
-          },
-          {
-            text: '最近三个月',
-            onClick(picker) {
-              const end = new Date();
-              const start = new Date();
-              start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
-              picker.$emit('pick', [start, end]);
-            }
-          }
-        ]
-      }
-    };
-  },
-  created() {
-    this.fetchFreshData();
-  },
-  methods: {
-    formatTime(time) {
-      if (!time) return '';
-      const date = new Date(time);
-      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-    },
-
-    cannel() {
-      this.data = {};
-      this.userAvatar = '';
-      this.userPwd = '';
-      this.dialogUserOperaion = false;
-      this.dialogStatusOperation = false;
-      this.isOperation = false;
-    },
-
-    comfirmStatus() {
-      const userUpdateDto = {
-        id: this.data.id,
-        isLogin: this.data.isLogin,
-        userRole: this.isAdmin ? 1 : 2,
-        isWord: this.data.isWord
-      };
-
-      this.$axios.put(`/user/backUpdate`, userUpdateDto)
-        .then(res => {
-          if (res.data.code === 200) {
-            this.$message.success('状态修改成功');
-            this.cannel();
-            this.fetchFreshData();
-          } else {
-            this.$message.error(res.data.msg || '状态修改失败');
-          }
-        })
-        .catch(error => {
-          console.error("修改状态异常:", error);
-          this.$message.error('状态修改异常');
-        });
-    },
-
-    handleStatus(data) {
-      this.isAdmin = data.userRole === 1;
-      this.dialogStatusOperation = true;
-      this.data = { ...data };
-    },
-
-    handleAvatarSuccess(res, file) {
-      if (res.code === 200) {
-        this.userAvatar = res.data;
-        this.$message.success('头像上传成功');
-      } else {
-        this.$message.error('头像上传失败');
-      }
-    },
-
-    async batchDelete() {
-      if (!this.selectedRows.length) {
-        this.$message.warning('请至少选择一条数据');
-        return;
-      }
-
-      try {
-        const confirmed = await this.$confirm(
-          `确认删除选中的${this.selectedRows.length}条用户数据吗？删除后不可恢复！`,
-          '删除确认',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        );
-
-        if (confirmed) {
-          const ids = this.selectedRows.map(item => item.id);
-          const response = await this.$axios.post(`/user/batchDelete`, ids);
-
-          if (response.data.code === 200) {
-            this.$message.success('删除成功');
-            this.fetchFreshData();
-            this.selectedRows = [];
-          } else {
-            this.$message.error(response.data.msg || '删除失败');
-          }
-        }
-      } catch (error) {
-        console.error('删除用户异常:', error);
-        this.$message.error('删除操作异常');
-      }
-    },
-
-    async updateOperation() {
-      if (this.userPwd !== '') {
-        const pwd = this.$md5(this.$md5(this.userPwd));
-        this.data.userPwd = pwd;
-      } else {
-        this.data.userPwd = null;
-      }
-      this.data.userAvatar = this.userAvatar;
-
-      try {
-        const response = await this.$axios.put('/user/backUpdate', this.data);
-        if (response.data.code === 200) {
-          this.$message.success('用户信息修改成功');
-          this.cannel();
-          this.fetchFreshData();
-        } else {
-          this.$message.error(response.data.msg || '修改失败');
-        }
-      } catch (error) {
-        console.error('修改出错:', error);
-        this.$message.error('修改异常');
-      }
-    },
-
-    async addOperation() {
-      if (this.userPwd !== '') {
-        this.data.userPwd = this.$md5(this.$md5(this.userPwd));
-      } else {
-        this.data.userPwd = null;
-      }
-      this.data.userAvatar = this.userAvatar;
-
-      try {
-        const response = await this.$axios.post('/user/insert', this.data);
-        if (response.data.code === 200) {
-          this.$message.success('用户新增成功');
-          this.cannel();
-          this.fetchFreshData();
-        } else {
-          this.$message.error(response.data.msg || '新增失败');
-        }
-      } catch (error) {
-        console.error('信息新增出错:', error);
-        this.$message.error('提交失败，请稍后再试！');
-      }
-    },
-
-    async fetchFreshData() {
-      try {
-        let startTime = '';
-        let endTime = '';
-        if (this.searchTime && this.searchTime.length === 2) {
-          startTime = `${this.searchTime[0]}T00:00:00`;
-          endTime = `${this.searchTime[1]}T23:59:59`;
-        }
-
-        const params = {
-          current: this.currentPage,
-          size: this.pageSize,
-          key: this.filterText,
-          startTime: startTime,
-          endTime: endTime,
-          ...this.userQueryDto
+    data() {
+        return {
+            userPwd: '',
+            userAvatar: '',
+            data: {},
+            filterText: '',
+            isAdmin: false, // 是否是管理员标志，初始值为false
+            currentPage: 1,
+            pageSize: 10,
+            totalItems: 0,
+            dialogStatusOperation: false,
+            dialogUserOperaion: false, // 开关
+            isOperation: false, // 开关-标识新增或修改
+            tableData: [],
+            searchTime: [],
+            selectedRows: [],
+            status: null,
+            userQueryDto: {}, // 搜索条件
+            loginStatuList: [{ value: null, label: '全部' }, { value: 0, label: '正常' }, { value: 1, label: '封号' }],
+            wordStatuList: [{ value: null, label: '全部' }, { value: 0, label: '正常' }, { value: 1, label: '禁言' }],
+            rolesList: [{ value: null, label: '全部' }, { value: 2, label: '用户' }, { value: 1, label: '管理员' }]
         };
-
-        const response = await this.$axios.post('/user/query', params);
-        const { data } = response;
-
-        if (data.code === 200) {
-          this.tableData = data.data;
-          this.totalItems = data.total;
-        } else {
-          this.$message.error(data.msg || '查询失败');
+    },
+    created() {
+        this.fetchFreshData();
+    },
+    methods: {
+        cannel() {
+            this.data = {};
+            this.userAvatar = '';
+            this.userPwd = '';
+            this.dialogUserOperaion = false;
+            this.dialogStatusOperation = false;
+            this.isOperation = false;
+        },
+        comfirmStatus() {
+            const userUpdateDto = {
+                id: this.data.id,
+                isLogin: this.data.isLogin,
+                userRole: this.isAdmin ? 1 : 2,
+                isWord: this.data.isWord
+            }
+            this.$axios.put(`/user/backUpdate`, userUpdateDto).then(res => {
+                if (res.data.code === 200) {
+                    this.$notify({
+                        duration: 1500,
+                        title: '信息修改',
+                        message: '修改成功',
+                        type: 'success'
+                    });
+                    this.cannel();
+                    this.fetchFreshData();
+                }
+            }).catch(error => {
+                console.log("修改状态异常：" + error);
+            })
+        },
+        handleStatus(data) {
+            // 设置用户角色
+            this.isAdmin = data.userRole === 1;
+            this.dialogStatusOperation = true;
+            this.data = data;
+        },
+        // 头像上传回调函数
+        handleAvatarSuccess(res, file) {
+            this.$notify({
+                duration: 1500,
+                title: '头像上传',
+                message: res.code === 200 ? '上传成功' : '上传失败',
+                type: res.code === 200 ? 'success' : 'error'
+            });
+                // 上传成功则更新用户头像
+            if (res.code === 200) {
+                this.userAvatar = res.data;
+            }
+        },
+        // 批量删除数据
+        async batchDelete() {
+            if (!this.selectedRows.length) {
+                this.$message(`未选中任何数据`);
+                return;
+            }
+            const confirmed = await this.$swalConfirm({
+                title: '删除用户数据',
+                text: `删除后不可恢复，是否继续？`,
+                icon: 'warning',
+            });
+            if (confirmed) {
+                try {
+                    let ids = this.selectedRows.map(entity => entity.id);
+                    const response = await this.$axios.post(`/user/batchDelete`, ids);
+                    if (response.data.code === 200) {
+                        this.$notify({
+                            duration: 1000,
+                            title: '信息删除',
+                            message: '删除成功',
+                            type: 'success'
+                        });
+                        this.fetchFreshData();
+                        return;
+                    }
+                } catch (error) {
+                    this.$message.error("用户信息删除异常");
+                    console.error('用户信息删除异常：', error);
+                }
+            }
+        },
+        // 修改信息
+        async updateOperation() {
+            if (this.userPwd !== '') {
+                const pwd = this.$md5(this.$md5(this.userPwd));
+                this.data.userPwd = pwd;
+            } else {
+                this.data.userPwd = null;
+            }
+            this.data.userAvatar = this.userAvatar;
+            try {
+                const response = await this.$axios.put('/user/backUpdate', this.data);
+                if (response.data.code === 200) {
+                    this.$notify({
+                        duration: 1000,
+                        title: '信息修改',
+                        message: '修改成功',
+                        type: 'success'
+                    });
+                    this.cannel();
+                    this.fetchFreshData();
+                }
+            } catch (error) {
+                console.error('修改出错:', error);
+            }
+        },
+        // 信息新增
+        async addOperation() {
+            //  密码处理
+            if (this.userPwd !== '') {
+                this.data.userPwd = this.$md5(this.$md5(this.userPwd));
+            } else {
+                this.data.userPwd = null;
+            }
+            this.data.userAvatar = this.userAvatar;
+            try {
+                const response = await this.$axios.post('/user/insert', this.data);
+                if (response.data.code === 200) {
+                    this.$notify({
+                        duration: 1000,
+                        title: '信息新增',
+                        message: '新增成功',
+                        type: 'success'
+                    });
+                    this.cannel();
+                    this.fetchFreshData();
+                }else{
+                    this.$notify({
+                        duration: 1000,
+                        title: '信息新增',
+                        message: response.data.msg,
+                        type: 'info'
+                    });
+                }
+            } catch (error) {
+                console.error('信息新增出错:', error);
+                this.$message.error('提交失败，请稍后再试！');
+            }
+        },
+        async fetchFreshData() {
+            try {
+                this.tableData = [];
+                let startTime = null;
+                let endTime = null;
+                if (this.searchTime != null && this.searchTime.length === 2) {
+                    const [startDate, endDate] = await Promise.all(this.searchTime.map(date => date.toISOString()));
+                    startTime = `${startDate.split('T')[0]}T00:00:00`;
+                    endTime = `${endDate.split('T')[0]}T23:59:59`;
+                }
+                // 请求参数
+                const params = {
+                    current: this.currentPage,
+                    size: this.pageSize,
+                    key: this.filterText,
+                    startTime: startTime,
+                    endTime: endTime,
+                    ...this.userQueryDto
+                };
+                const response = await this.$axios.post('/user/query', params);
+                const { data } = response;
+                this.tableData = data.data;
+                this.totalItems = data.total;
+            } catch (error) {
+                this.$message.error("查询用户信息异常");
+                console.error('查询用户信息异常:', error);
+            }
+        },
+        add() {
+            this.dialogUserOperaion = true;
+        },
+        handleFilter() {
+            this.currentPage = 1;
+            this.fetchFreshData();
+        },
+        handleFilterClear() {
+            this.filterText = '';
+            this.handleFilter();
+        },
+        handleSizeChange(val) {
+            this.pageSize = val;
+            this.currentPage = 1;
+            this.fetchFreshData();
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            this.fetchFreshData();
+        },
+        handleEdit(row) {
+            this.dialogUserOperaion = true;
+            this.isOperation = true;
+            row.userPwd = null;
+            this.userAvatar = row.userAvatar;
+            this.data = { ...row }
+        },
+        handleDelete(row) {
+            this.selectedRows = [row];
+            this.batchDelete();
         }
-      } catch (error) {
-        console.error('查询用户信息异常:', error);
-        this.$message.error('查询操作异常');
-      }
     },
-
-    add() {
-      this.dialogUserOperaion = true;
-      this.isOperation = false;
-      this.data = {};
-      this.userAvatar = '';
-      this.userPwd = '';
-    },
-
-    handleFilter() {
-      this.currentPage = 1;
-      this.fetchFreshData();
-    },
-
-    handleFilterClear() {
-      this.filterText = '';
-      this.handleFilter();
-    },
-
-    handleSizeChange(val) {
-      this.pageSize = val;
-      this.currentPage = 1;
-      this.fetchFreshData();
-    },
-
-    handleCurrentChange(val) {
-      this.currentPage = val;
-      this.fetchFreshData();
-    },
-
-    handleEdit(row) {
-      this.dialogUserOperaion = true;
-      this.isOperation = true;
-      this.userAvatar = row.userAvatar;
-      this.data = { ...row };
-      this.userPwd = '';
-    },
-
-    handleDelete(row) {
-      this.selectedRows = [row];
-      this.batchDelete();
-    }
-  }
 };
 </script>
-
-<style scoped lang="scss">
-.user-management-container {
-  padding: 20px 0;
-
-  .search-card {
-    margin-bottom: 20px;
-    border-radius: 8px;
-    border: 1px solid #ebeef5;
-
-    .search-content {
-      display: flex;
-      align-items: center;
-    }
-  }
-
-  .user-cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-
-    .user-card {
-      border-radius: 8px;
-      transition: all 0.3s ease;
-
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      .user-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
-
-        .user-info {
-          margin-left: 12px;
-
-          .user-name {
-            font-weight: 500;
-            font-size: 16px;
-          }
-
-          .user-account {
-            font-size: 12px;
-            color: #909399;
-          }
-        }
-      }
-
-      .user-details {
-        margin-bottom: 12px;
-
-        .detail-item {
-          display: flex;
-          align-items: center;
-          margin-bottom: 6px;
-          font-size: 13px;
-          color: #606266;
-
-          i {
-            margin-right: 8px;
-            color: #909399;
-          }
-        }
-      }
-
-      .user-status {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 12px;
-      }
-
-      .user-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 6px;
-      }
-    }
-  }
-
-  .pagination-area {
-    display: flex;
-    justify-content: center;
-  }
-
-  .avatar-uploader {
-    ::v-deep .el-upload {
-      border: 1px dashed #d9d9d9;
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-
-      &:hover {
-        border-color: #409EFF;
-      }
-    }
-
-    .avatar-uploader-icon {
-      font-size: 28px;
-      color: #8c939d;
-      width: 120px;
-      height: 120px;
-      line-height: 120px;
-      text-align: center;
-    }
-
-    .avatar {
-      width: 120px;
-      height: 120px;
-      display: block;
-    }
-  }
-}
-</style>
+<style scoped lang="scss"></style>

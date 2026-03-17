@@ -1,79 +1,24 @@
 <template>
-    <div class="register-container">
-        <div class="register-card">
-            <!-- Left Banner Section -->
-            <div class="banner-section">
-                <img src="/bag.png" alt="Seat Reservation System" class="banner-image">
-                <div class="banner-overlay">
-                    <h3 class="welcome-text">加入我们</h3>
-                    <h1 class="system-title">校园二手交易平台</h1>
-                    <p class="system-description">立即注册 · 享受便捷交易服务</p>
-                </div>
+    <div class="register-containel">
+        <div class="register-panel">
+            <h1>注册新身份</h1>
+            <div class="text">
+                <input v-model="act" class="act" placeholder="新账号" />
             </div>
-
-            <!-- Right Registration Form -->
-            <div class="form-section">
-                <div class="form-header">
-                    <h2 class="register-title">用户注册</h2>
-                    <p class="register-subtitle">创建您的账户开始交易</p>
-                </div>
-
-                <div class="form-body">
-                    <div class="input-group">
-                        <input 
-                            v-model="act" 
-                            class="form-input" 
-                            placeholder="请输入账号" 
-                            type="text"
-                            @keyup.enter="registerFunc"
-                        >
-                        <span class="input-icon"><i class="el-icon-user"></i></span>
-                    </div>
-
-                    <div class="input-group">
-                        <input 
-                            v-model="name" 
-                            class="form-input" 
-                            placeholder="请输入用户名" 
-                            type="text"
-                            @keyup.enter="registerFunc"
-                        >
-                        <span class="input-icon"><i class="el-icon-edit"></i></span>
-                    </div>
-
-                    <div class="input-group">
-                        <input 
-                            v-model="pwd" 
-                            class="form-input" 
-                            placeholder="请输入密码" 
-                            type="password"
-                            @keyup.enter="registerFunc"
-                        >
-                        <span class="input-icon"><i class="el-icon-lock"></i></span>
-                    </div>
-
-                    <div class="input-group">
-                        <input 
-                            v-model="pwdConfirm" 
-                            class="form-input" 
-                            placeholder="请确认密码" 
-                            type="password"
-                            @keyup.enter="registerFunc"
-                        >
-                        <span class="input-icon"><i class="el-icon-check"></i></span>
-                    </div>
-
-                    <button class="register-button" @click="registerFunc">
-                        注 册
-                    </button>
-
-                    <div class="form-footer">
-                        <span class="login-text">
-                            已有账户？
-                            <span class="login-link" @click="toDoLogin">立即登录</span>
-                        </span>
-                    </div>
-                </div>
+            <div class="text">
+                <input v-model="name" class="act" placeholder="新用户类别名" />
+            </div>
+            <div class="text">
+                <input v-model="pwd" class="pwd" type="password" placeholder="输入密码" />
+            </div>
+            <div class="text">
+                <input v-model="pwdConfirm" class="pwd" type="password" placeholder="确认密码" />
+            </div>
+            <div>
+                <span class="register-btn" @click="registerFunc">立即注册</span>
+            </div>
+            <div class="tip">
+                <p>已有账户？<span class="no-act" @click="toDoLogin">返回登录</span></p>
             </div>
         </div>
     </div>
@@ -83,34 +28,38 @@
 const DELAY_TIME = 1300;
 import request from "@/utils/request.js";
 import md5 from 'js-md5';
-
+import Logo from '@/components/Logo.vue';
 export default {
     name: "Register",
+    components: { Logo },
     data() {
         return {
             act: '', // 账号
             pwd: '', // 密码
             pwdConfirm: '', // 确认密码
-            name: '' // 用户名
+            name: '' // 用户类别名
         }
     },
     methods: {
+        // 返回登录页面
         toDoLogin() {
             this.$router.push('/login');
         },
         async registerFunc() {
-            if (!this.act || !this.pwd || !this.pwdConfirm || !this.name) {
-                this.$notify.info({
+            if (!this.act || !this.pwd || !this.pwdConfirm || !this.name ) {
+                this.$swal.fire({
                     title: '填写校验',
-                    message: '账号、密码和用户名不能为空',
-                    duration: 1000,
+                    text: '账号或密码或用户类别名不能为空',
+                    icon: 'error',
+                    showConfirmButton: false,
+                    timer: DELAY_TIME,
                 });
                 return;
             }
             if (this.pwd !== this.pwdConfirm) {
                 this.$swal.fire({
                     title: '填写校验',
-                    text: '两次输入的密码不一致',
+                    text: '前后密码输入不一致',
                     icon: 'error',
                     showConfirmButton: false,
                     timer: DELAY_TIME,
@@ -118,11 +67,7 @@ export default {
                 return;
             }
             const hashedPwd = md5(md5(this.pwd));
-            const paramDTO = { 
-                userAccount: this.act, 
-                userPwd: hashedPwd, 
-                userName: this.name 
-            };
+            const paramDTO = { userAccount: this.act, userPwd: hashedPwd, userName: this.name };
             try {
                 const { data } = await request.post(`user/register`, paramDTO);
                 if (data.code !== 200) {
@@ -135,23 +80,20 @@ export default {
                     });
                     return;
                 }
+                // 使用Swal通知注册成功，延迟后跳转
                 this.$swal.fire({
                     title: '注册成功',
-                    text: '即将跳转到登录页面...',
+                    text: '即将返回登录页...',
                     icon: 'success',
                     showConfirmButton: false,
                     timer: DELAY_TIME,
                 });
+                // 根据角色延迟跳转
                 setTimeout(() => {
                     this.$router.push('/login');
                 }, DELAY_TIME);
             } catch (error) {
                 console.error('注册请求错误:', error);
-                this.$notify.error({
-                    title: '注册错误',
-                    message: '注册过程中出现错误，请稍后重试',
-                    duration: 2000,
-                });
             }
         }
     }
@@ -159,199 +101,112 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.register-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-sizing: border-box;
+* {
+    user-select: none;
+}
+
+.register-containel {
+    // background-image: url('/bag.png');
+    width: 100%;
     min-height: 100vh;
-    background-color: #f5f7fa;
-    background-image: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-    padding: 20px;
-}
-
-.register-card {
+   // background-color: rgb(207, 192, 109);
     display: flex;
-    width: 900px;
-    height: 600px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-}
-
-.banner-section {
-    flex: 1;
-    position: relative;
-    background: linear-gradient(135deg, #e9d787 0%, #90de3c 100%);
-}
-
-.banner-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.8;
-}
-
-.banner-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
+    /* 启用Flexbox布局 */
     justify-content: center;
+    /* 水平居中 */
     align-items: center;
-    color: white;
-    padding: 40px;
-    text-align: center;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.welcome-text {
-    font-size: 24px;
-    margin-bottom: 10px;
-    font-weight: 300;
-}
-
-.system-title {
-    font-size: 36px;
-    margin: 0 0 15px 0;
-    font-weight: 600;
-}
-
-.system-description {
-    font-size: 16px;
-    opacity: 0.9;
-}
-
-.form-section {
-    flex: 1;
-    padding: 60px 50px;
-    display: flex;
+    /* 垂直居中 */
     flex-direction: column;
-}
+    /* 如果需要垂直居中，确保子元素也是这样排列 */
 
-.form-header {
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.register-title {
-    font-size: 28px;
-    color: #303133;
-    margin-bottom: 10px;
-    font-weight: 600;
-}
-
-.register-subtitle {
-    font-size: 14px;
-    color: #909399;
-    margin: 0;
-}
-
-.form-body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.input-group {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.form-input {
-    width: 100%;
-    box-sizing: border-box;
-    height: 50px;
-    padding: 0 20px 0 45px;
-    border: 1px solid #dcdfe6;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #606266;
-    transition: border-color 0.3s;
-    
-    &:focus {
-        outline: none;
-        border-color: #409eff;
-        box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
-    }
-    
-    &::placeholder {
-        color: #c0c4cc;
-    }
-}
-
-.input-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #c0c4cc;
-    font-size: 16px;
-}
-
-.register-button {
-    width: 100%;
-    height: 50px;
-    background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 10px;
-    
-    &:hover {
-        opacity: 0.9;
-        box-shadow: 0 5px 15px rgba(58, 123, 213, 0.3);
-    }
-    
-    &:active {
-        transform: translateY(1px);
-    }
-}
-
-.form-footer {
-    margin-top: auto;
-    text-align: center;
-    padding-top: 20px;
-}
-
-.login-text {
-    font-size: 14px;
-    color: #909399;
-}
-
-.login-link {
-    color: #3a7bd5;
-    cursor: pointer;
-    font-weight: 500;
-    transition: color 0.3s;
-    
-    &:hover {
-        color: #00d2ff;
-        text-decoration: underline;
-    }
-}
-
-@media (max-width: 768px) {
-    .register-card {
-        flex-direction: column;
+    .register-panel {
+        margin: 0 auto;
+        width: 333px;
         height: auto;
+        padding: 40px 30px 16px 30px;
+        border-radius: 10px;
+        background-color: rgb(255, 255, 255);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+
+        .logo {
+            margin: 10px 0 30px 0;
+        }
+
+        .act,
+        .pwd {
+            margin: 8px 0;
+            height: 63px;
+            line-height: 63px;
+            width: 100%;
+            padding: 0 8px;
+            background-color: rgb(248,248,248);
+            box-sizing: border-box;
+            border: 1px solid rgb(248,248,248);
+            border-radius: 5px;
+            font-weight: 800;
+            font-size: 18px;
+            padding: 0 15px;
+            margin-top: 13px;
+        }
+
+        .act:focus,
+        .pwd:focus {
+            outline: none;
+            background-color: rgb(244,244,244);
+            transition: 1.2s;
+        }
+
+        .role {
+            display: inline-block;
+            color: rgb(26, 189, 91);
+            font-size: 14px;
+            padding-right: 10px;
+        }
+    }
+
+    .register-btn {
+        display: inline-block;
+        text-align: center;
+        border-radius: 3px;
+        margin-top: 20px;
+        height: 43px;
+        line-height: 43px;
         width: 100%;
+        background-color: rgb(30, 190, 94);
+        font-size: 14px !important;
+        border: none;
+        color: rgb(250,250,250);
+        padding: 0 !important;
+        cursor: pointer;
+        user-select: none;
     }
-    
-    .banner-section {
-        height: 200px;
+
+    .tip {
+        margin: 20px 0;
+
+        p {
+            padding: 3px 0;
+            font-size: 14px;
+            margin: 0;
+            color: #647897;
+
+            i {
+                margin-right: 3px;
+            }
+
+            span {
+                color: #3b3c3e;
+                border-radius: 2px;
+                margin: 0 6px;
+            }
+
+            .no-act:hover {
+                color: #568ed7;
+                cursor: pointer;
+            }
+
+        }
     }
-    
-    .form-section {
-        padding: 40px 30px;
-    }
+
 }
 </style>

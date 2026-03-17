@@ -31,6 +31,7 @@
 <script>
 import ResetPwd from '@/views/user/ResetPwd'
 import Self from '@/views/user/Self'
+import { clearToken } from '@/utils/storage'
 export default {
     components: { ResetPwd, Self },
     data() {
@@ -41,31 +42,12 @@ export default {
         };
     },
     created() {
-        this.syncTabFromRoute();
-    },
-    watch: {
-        '$route.query.tab': {
-            immediate: false,
-            handler() {
-                this.syncTabFromRoute();
-            }
-        }
+        this.condition(this.defaultPath);
     },
     methods: {
         loginout() {
-            sessionStorage.setItem('token', null);
-            sessionStorage.setItem('userInfo', null);
+            clearToken();
             this.$router.push('/login');
-        },
-        // 根据路由参数同步当前选中的标签
-        syncTabFromRoute() {
-            const tab = this.$route.query.tab;
-            if (tab === 'pwd') {
-                this.tagSelected = '修改密码';
-            } else {
-                // 默认或其他值都回到“修改资料”
-                this.tagSelected = this.defaultPath;
-            }
         },
         condition(tag) {
             this.tagSelected = tag;
