@@ -30,7 +30,7 @@
                   class="btn-favorite"
                   @click="toggleFavorite"
                 >
-                  {{ collected ? '取消收藏' : '收藏' }}
+                  {{ collected ? "取消收藏" : "收藏" }}
                 </el-button>
               </div>
               <div class="block block-publisher">
@@ -39,7 +39,9 @@
               </div>
               <div class="block block-price">
                 <span class="section-label section-label-lg">价格</span>
-                <span class="price">¥ {{ product.price != null ? product.price : '-' }}</span>
+                <span class="price"
+                  >¥ {{ product.price != null ? product.price : "-" }}</span
+                >
               </div>
               <div class="block block-info">
                 <span class="section-label section-label-lg">基础信息</span>
@@ -50,15 +52,21 @@
                   </div>
                   <div class="info-item">
                     <span class="info-item-label">新旧程度</span>
-                    <span>{{ product.oldLevel != null ? product.oldLevel + ' / 9' : '-' }}</span>
+                    <span>{{
+                      product.oldLevel != null ? product.oldLevel + " / 9" : "-"
+                    }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-item-label">库存</span>
-                    <span>{{ product.inventory != null ? product.inventory : '-' }}</span>
+                    <span>{{
+                      product.inventory != null ? product.inventory : "-"
+                    }}</span>
                   </div>
                   <div class="info-item info-item-bargain">
                     <span class="info-item-label">是否支持砍价</span>
-                    <span :class="{ 'bargain-yellow': isBargain }">{{ isBargain ? '支持' : '不支持' }}</span>
+                    <span :class="{ 'bargain-yellow': isBargain }">{{
+                      isBargain ? "支持" : "不支持"
+                    }}</span>
                   </div>
                 </div>
               </div>
@@ -67,8 +75,20 @@
                 <p class="detail-text">{{ product.detail }}</p>
               </div>
               <div class="actions">
-                <el-button type="primary" size="medium" icon="el-icon-chat-dot-round" @click="handleIWant">我想要</el-button>
-                <el-button type="danger" size="medium" icon="el-icon-goods" @click="openOrderDialog">立即购买</el-button>
+                <el-button
+                  type="primary"
+                  size="medium"
+                  icon="el-icon-chat-dot-round"
+                  @click="handleIWant"
+                  >我想要</el-button
+                >
+                <el-button
+                  type="danger"
+                  size="medium"
+                  icon="el-icon-goods"
+                  @click="openOrderDialog"
+                  >立即购买</el-button
+                >
               </div>
             </div>
           </el-col>
@@ -88,8 +108,14 @@
           <div class="order-title">{{ product.name }}</div>
           <div class="order-meta">
             <span class="order-price-label">单价：</span>
-            <span class="order-price">¥ {{ product.price != null ? product.price : '-' }}</span>
-            <span class="order-stock">库存：{{ product.inventory != null ? product.inventory : '-' }}</span>
+            <span class="order-price"
+              >¥ {{ product.price != null ? product.price : "-" }}</span
+            >
+            <span class="order-stock"
+              >库存：{{
+                product.inventory != null ? product.inventory : "-"
+              }}</span
+            >
           </div>
         </div>
         <div class="order-field">
@@ -120,11 +146,11 @@
 </template>
 
 <script>
-import { toFullImageUrl } from '@/utils/imageUrl'
-import { getUserInfo } from '@/utils/storage'
+import { toFullImageUrl } from "@/utils/imageUrl";
+import { getUserInfo } from "@/utils/storage";
 
 export default {
-  name: 'ProductDetail',
+  name: "ProductDetail",
   data() {
     return {
       product: {},
@@ -133,223 +159,237 @@ export default {
       collected: false,
       orderDialogVisible: false,
       orderQuantity: 1,
-      orderRemark: ''
-    }
+      orderRemark: ""
+    };
   },
   computed: {
     productId() {
-      const id = this.$route.query.id
-      return id != null && id !== '' ? Number(id) : null
+      const id =
+        this.$route.query.id != null && this.$route.query.id !== ""
+          ? this.$route.query.id
+          : this.$route.query.productId;
+      return id != null && id !== "" ? Number(id) : null;
     },
     coverUrl() {
-      const url = this.product.coverList
-      return toFullImageUrl(url || '')
+      const url = this.product.coverList;
+      const firstUrl = url ? String(url).split(",")[0] : "";
+      return toFullImageUrl(firstUrl || "");
     },
     categoryName() {
-      const id = this.product.categoryId
-      if (id == null) return '-'
-      const item = this.categoryList.find(c => c.id === id)
-      return item ? item.name : String(id)
+      const id = this.product.categoryId;
+      if (id == null) return "-";
+      const item = this.categoryList.find(c => c.id === id);
+      return item ? item.name : String(id);
     },
     publisherName() {
-      return this.product.userName || this.product.userNickName || (this.product.userId != null ? String(this.product.userId) : '-')
+      return (
+        this.product.userName ||
+        this.product.userNickName ||
+        (this.product.userId != null ? String(this.product.userId) : "-")
+      );
     },
     isBargain() {
-      return this.product.isBargain === true || this.product.isBargain === 1
+      return this.product.isBargain === true || this.product.isBargain === 1;
     }
   },
   watch: {
-    '$route.query.id'() {
-      this.fetchDetail()
-    },
     productId() {
-      this.loadFavoriteStatus()
+      this.fetchDetail();
+      this.loadFavoriteStatus();
     }
   },
   created() {
-    this.fetchCategoryList()
-    this.fetchDetail()
-    this.loadFavoriteStatus()
+    this.fetchCategoryList();
+    this.fetchDetail();
+    this.loadFavoriteStatus();
   },
   methods: {
     getImageUrl(url) {
-      return toFullImageUrl(url || '')
+      return toFullImageUrl(url || "");
     },
     fetchCategoryList() {
-      this.$axios.post('/category/query', { size: 200 }).then(res => {
-        const { data } = res
-        if (data && data.code === 200 && Array.isArray(data.data)) {
-          this.categoryList = (data.data || []).filter(
-            item => item.isUse === true || item.isUse === 1
-          )
-        } else {
-          this.categoryList = []
-        }
-      }).catch(() => {
-        this.categoryList = []
-      })
-    },
-    fetchDetail() {
-      if (this.productId == null || isNaN(this.productId)) {
-        this.product = {}
-        this.collected = false
-        return
-      }
-      this.loading = true
       this.$axios
-        .post('/product/query', { id: this.productId, current: 1, size: 1 })
+        .post("/category/query", { size: 200 })
         .then(res => {
-          const { data } = res
-          if (data && data.code === 200 && Array.isArray(data.data) && data.data.length) {
-            this.product = data.data[0]
-            // 商品加载完成后，检查收藏状态
-            this.loadFavoriteStatus()
+          const { data } = res;
+          if (data && data.code === 200 && Array.isArray(data.data)) {
+            this.categoryList = (data.data || []).filter(
+              item => item.isUse === true || item.isUse === 1
+            );
           } else {
-            this.product = {}
-            this.collected = false
+            this.categoryList = [];
           }
         })
         .catch(() => {
-          this.product = {}
-          this.collected = false
+          this.categoryList = [];
+        });
+    },
+    fetchDetail() {
+      if (this.productId == null || isNaN(this.productId)) {
+        this.product = {};
+        this.collected = false;
+        return;
+      }
+      this.loading = true;
+      this.$axios
+        .post("/product/query", { id: this.productId, current: 1, size: 1 })
+        .then(res => {
+          const { data } = res;
+          if (
+            data &&
+            data.code === 200 &&
+            Array.isArray(data.data) &&
+            data.data.length
+          ) {
+            this.product = data.data[0];
+            // 商品加载完成后，检查收藏状态
+            this.loadFavoriteStatus();
+          } else {
+            this.product = {};
+            this.collected = false;
+          }
+        })
+        .catch(() => {
+          this.product = {};
+          this.collected = false;
         })
         .finally(() => {
-          this.loading = false
-        })
+          this.loading = false;
+        });
     },
     loadFavoriteStatus() {
       if (this.productId == null) {
-        this.collected = false
-        return
+        this.collected = false;
+        return;
       }
-      const userInfo = getUserInfo()
+      const userInfo = getUserInfo();
       if (!userInfo) {
-        this.collected = false
-        return
+        this.collected = false;
+        return;
       }
       this.$axios
-        .post('/interaction/query', {
+        .post("/interaction/query", {
           userId: userInfo.id,
           productId: this.productId,
           type: 1
         })
         .then(res => {
-          const { data } = res
+          const { data } = res;
           if (data && data.code === 200) {
-            this.collected = data.total > 0
+            this.collected = data.total > 0;
           }
         })
         .catch(() => {
-          this.collected = false
-        })
+          this.collected = false;
+        });
     },
     toggleFavorite() {
       if (this.productId == null) {
-        this.$message.warning('商品ID不存在')
-        return
+        this.$message.warning("商品ID不存在");
+        return;
       }
       this.$axios
         .post(`/interaction/saveOperation/${this.productId}`)
         .then(res => {
-          const { data } = res
+          const { data } = res;
           if (data && data.code === 200) {
-            this.collected = data.data
+            this.collected = data.data;
             this.$notify({
               duration: 1000,
-              title: '收藏操作',
-              message: data.msg || (this.collected ? '已收藏' : '已取消收藏'),
-              type: 'success'
-            })
+              title: "收藏操作",
+              message: data.msg || (this.collected ? "已收藏" : "已取消收藏"),
+              type: "success"
+            });
           }
         })
         .catch(error => {
-          console.error('收藏操作异常:', error)
-          this.$message.error('收藏操作异常')
-        })
+          console.error("收藏操作异常:", error);
+          this.$message.error("收藏操作异常");
+        });
     },
     handleIWant() {
       if (!this.product || !this.product.id) {
-        this.$message.warning('商品信息不完整')
-        return
+        this.$message.warning("商品信息不完整");
+        return;
       }
       this.$axios
         .post(`/interaction/likeProduct/${this.product.id}`)
         .then(res => {
-          const { data } = res
+          const { data } = res;
           if (data && data.code === 200) {
             this.$notify({
               duration: 1200,
-              title: '想要操作通知',
-              message: data.msg || '已通知发布者',
-              type: 'success'
-            })
+              title: "想要操作通知",
+              message: data.msg || "已通知发布者",
+              type: "success"
+            });
           } else {
             this.$notify({
               duration: 2000,
-              title: '想要操作通知',
-              message: (data && data.msg) || '操作失败',
-              type: 'info'
-            })
+              title: "想要操作通知",
+              message: (data && data.msg) || "操作失败",
+              type: "info"
+            });
           }
         })
         .catch(error => {
-          console.error('商品---想要---异常：', error)
-          this.$message.error('想要操作异常')
-        })
+          console.error("商品---想要---异常：", error);
+          this.$message.error("想要操作异常");
+        });
     },
     openOrderDialog() {
       if (!this.product || !this.product.id) {
-        this.$message.warning('商品信息不完整')
-        return
+        this.$message.warning("商品信息不完整");
+        return;
       }
-      this.orderQuantity = 1
-      this.orderRemark = ''
-      this.orderDialogVisible = true
+      this.orderQuantity = 1;
+      this.orderRemark = "";
+      this.orderDialogVisible = true;
     },
     submitOrder() {
       if (!this.product || !this.product.id) {
-        this.$message.warning('商品信息不完整')
-        return
+        this.$message.warning("商品信息不完整");
+        return;
       }
       if (!this.orderQuantity || this.orderQuantity <= 0) {
-        this.$message.warning('请选择正确的下单数量')
-        return
+        this.$message.warning("请选择正确的下单数量");
+        return;
       }
       const payload = {
         productId: this.product.id,
         buyNumber: this.orderQuantity,
         detail: this.orderRemark
-      }
+      };
       this.$axios
-        .post('/product/buyProduct', payload)
+        .post("/product/buyProduct", payload)
         .then(res => {
-          const { data } = res
+          const { data } = res;
           if (data && data.code === 200) {
             this.$notify({
               duration: 1200,
-              title: '下单成功',
-              message: data.msg || '下单成功',
-              type: 'success'
-            })
-            this.orderDialogVisible = false
+              title: "下单成功",
+              message: data.msg || "下单成功",
+              type: "success"
+            });
+            this.orderDialogVisible = false;
             // 下单成功后刷新商品信息，更新库存
-            this.fetchDetail()
+            this.fetchDetail();
           } else {
             this.$notify({
               duration: 2000,
-              title: '下单失败',
-              message: (data && data.msg) || '下单失败',
-              type: 'error'
-            })
+              title: "下单失败",
+              message: (data && data.msg) || "下单失败",
+              type: "error"
+            });
           }
         })
         .catch(error => {
-          console.error('商品下单异常：', error)
-          this.$message.error('下单异常')
-        })
+          console.error("商品下单异常：", error);
+          this.$message.error("下单异常");
+        });
     }
   }
-}
+};
 </script>
 
 <style scoped lang="scss">

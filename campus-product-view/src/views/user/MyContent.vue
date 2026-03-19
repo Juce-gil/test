@@ -3,22 +3,25 @@
     <!-- 筛选区 -->
     <div class="filter-section">
       <div class="filter-container">
-        <el-input 
-          v-model="contentQueryDto.name" 
-          placeholder="搜索动态标题" 
-          clearable 
+        <el-input
+          v-model="contentQueryDto.name"
+          placeholder="搜索动态标题"
+          clearable
           size="large"
-          class="search-input" 
-          @clear="fetchFreshData" 
-          @keyup.enter="fetchFreshData">
+          class="search-input"
+          @clear="fetchFreshData"
+          @keyup.enter="fetchFreshData"
+        >
           <template #append>
-            <el-button type="primary" class="customer" icon="el-icon-search" @click="fetchFreshData"></el-button>
+            <el-button
+              type="primary"
+              class="customer"
+              icon="el-icon-search"
+              @click="fetchFreshData"
+            ></el-button>
           </template>
         </el-input>
-        <el-button 
-          type="primary" 
-          class="add-button" 
-          @click="addContent">
+        <el-button type="primary" class="add-button" @click="addContent">
           新增动态
         </el-button>
       </div>
@@ -26,19 +29,38 @@
 
     <!-- 动态列表 -->
     <div class="content-list">
-      <el-empty v-if="contentList.length === 0" description="暂无动态信息"></el-empty>
+      <el-empty
+        v-if="contentList.length === 0"
+        description="暂无动态信息"
+      ></el-empty>
 
-      <transition-group key="model-5" v-else name="content-list" tag="div" class="content-grid">
-        <div 
-          v-for="content in contentList" 
-          :key="content.id" 
-          class="content-card">
-          <div class="content-image-container" @click="viewContentDetail(content)">
-            <img :src="getCoverImage(content)" :alt="content.name" class="content-image">
+      <transition-group
+        key="model-5"
+        v-else
+        name="content-list"
+        tag="div"
+        class="content-grid"
+      >
+        <div
+          v-for="content in contentList"
+          :key="content.id"
+          class="content-card"
+        >
+          <div
+            class="content-image-container"
+            @click="viewContentDetail(content)"
+          >
+            <img
+              :src="getCoverImage(content)"
+              :alt="content.name"
+              class="content-image"
+            />
           </div>
 
           <div class="content-info">
-            <h3 class="content-title" @click="viewContentDetail(content)">{{ content.name }}</h3>
+            <h3 class="content-title" @click="viewContentDetail(content)">
+              {{ content.name }}
+            </h3>
 
             <div class="author-info">
               <el-avatar :src="content.userAvatar" size="small"></el-avatar>
@@ -47,16 +69,18 @@
 
             <!-- 操作按钮组 -->
             <div class="action-buttons">
-              <el-button 
-                size="mini" 
-                type="primary" 
-                @click.stop="editContent(content)">
+              <el-button
+                size="mini"
+                type="primary"
+                @click.stop="editContent(content)"
+              >
                 修改
               </el-button>
-              <el-button 
-                size="mini" 
-                type="danger" 
-                @click.stop="confirmDelete(content)">
+              <el-button
+                size="mini"
+                type="danger"
+                @click.stop="confirmDelete(content)"
+              >
                 删除
               </el-button>
             </div>
@@ -69,11 +93,11 @@
 
 <script>
 export default {
-  name: 'ContentList',
+  name: "ContentList",
   data() {
     return {
       contentQueryDto: {
-        name: ''
+        name: ""
       },
       contentList: []
     };
@@ -83,7 +107,7 @@ export default {
   },
   methods: {
     addContent() {
-      this.$router.push('/post-content');
+      this.$router.push("/post-content");
     },
 
     editContent(content) {
@@ -95,45 +119,48 @@ export default {
     },
 
     getCoverImage(content) {
-      return content.cover || '';
+      return content.cover || "";
     },
 
     async fetchFreshData() {
       try {
-        const res = await this.$axios.post('/content/queryUser', this.contentQueryDto);
+        const res = await this.$axios.post(
+          "/content/queryUser",
+          this.contentQueryDto
+        );
         if (res.data.code === 200) {
           this.contentList = res.data.data;
         }
       } catch (error) {
         console.error("动态查询异常：", error);
-        this.$message.error('获取动态列表失败');
+        this.$message.error("获取动态列表失败");
       }
     },
 
     confirmDelete(content) {
-      this.$confirm('确定要删除这条动态吗？删除后无法恢复', '删除确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.deleteContent(content.id);
-      }).catch(() => {
-
-      });
+      this.$confirm("确定要删除这条动态吗？删除后无法恢复", "删除确认", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          this.deleteContent(content.id);
+        })
+        .catch(() => {});
     },
 
     async deleteContent(contentId) {
       try {
-        const res = await this.$axios.post('/content/batchDelete', [contentId]);
+        const res = await this.$axios.post("/content/batchDelete", [contentId]);
         if (res.data.code === 200) {
-          this.$message.success('删除成功');
+          this.$message.success("删除成功");
           this.fetchFreshData();
         } else {
-          this.$message.error(res.data.msg || '删除失败');
+          this.$message.error(res.data.msg || "删除失败");
         }
       } catch (error) {
         console.error("删除动态异常：", error);
-        this.$message.error('删除失败');
+        this.$message.error("删除失败");
       }
     }
   }
@@ -163,7 +190,7 @@ export default {
       }
 
       .add-button {
-        background: linear-gradient(90deg, #409EFF, #66b1ff);
+        background: linear-gradient(90deg, #409eff, #66b1ff);
         border: none;
         box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
         transition: all 0.3s;
@@ -243,7 +270,7 @@ export default {
           transition: color 0.3s;
 
           &:hover {
-            color: #409EFF;
+            color: #409eff;
           }
         }
 

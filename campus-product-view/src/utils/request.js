@@ -29,10 +29,14 @@ request.interceptors.response.use(
     const data = response.data;
     if (data && data.code !== 200) {
       const msg = data.msg || data.message || "";
-      const isAuthError = msg.indexOf("登录") !== -1 || msg.indexOf("身份认证") !== -1;
+      const isAuthError =
+        msg.indexOf("登录") !== -1 || msg.indexOf("身份认证") !== -1;
       if (isAuthError) {
         clearToken();
-        router.push({ path: "/login", query: { redirect: router.currentRoute.fullPath } });
+        router.push({
+          path: "/login",
+          query: { redirect: router.currentRoute.fullPath }
+        });
       } else if (msg) {
         // 统一业务错误提示
         Message.error(msg);
@@ -44,16 +48,23 @@ request.interceptors.response.use(
     const res = error.response;
     if (res && res.status === 401) {
       clearToken();
-      router.push({ path: "/login", query: { redirect: router.currentRoute.fullPath } });
+      router.push({
+        path: "/login",
+        query: { redirect: router.currentRoute.fullPath }
+      });
       return Promise.reject(error);
     }
     if (res && res.data) {
       const msg = res.data.msg || res.data.message || "";
       const isAuthError =
-        (res.data.code !== 200 && msg.indexOf("登录") !== -1) || msg.indexOf("身份认证") !== -1;
+        (res.data.code !== 200 && msg.indexOf("登录") !== -1) ||
+        msg.indexOf("身份认证") !== -1;
       if (isAuthError) {
         clearToken();
-        router.push({ path: "/login", query: { redirect: router.currentRoute.fullPath } });
+        router.push({
+          path: "/login",
+          query: { redirect: router.currentRoute.fullPath }
+        });
       } else if (msg) {
         Message.error(msg);
       }

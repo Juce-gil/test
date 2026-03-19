@@ -1,94 +1,202 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import ElementUI from 'element-ui';
-import 'element-ui/lib/theme-chalk/index.css';
-import { getToken, clearToken } from "@/utils/storage.js";
-import echarts from 'echarts';
+import ElementUI from "element-ui";
+import "element-ui/lib/theme-chalk/index.css";
+import echarts from "echarts";
+import { clearToken, getToken } from "@/utils/storage.js";
+
 Vue.prototype.$echarts = echarts;
 Vue.use(ElementUI);
 Vue.use(VueRouter);
 
-const routes = [
-  { path: "/", component: () => import(`@/views/user/Home.vue`) },
-  { path: "/login", component: () => import(`@/views/login/Login.vue`) },
-  { path: "/register", component: () => import(`@/views/register/Register.vue`) },
+const adminChildren = [
   {
-    path: "/admin",
-    component: () => import(`@/views/admin/Home.vue`),
-    meta: { requireAuth: true },
-    children: [
-      { path: "/adminLayout", name: '仪表盘', icon: 'el-icon-pie-chart', component: () => import(`@/views/admin/Main.vue`), meta: { requireAuth: true } },
-      { path: "/userManage", name: '用户管理', icon: 'el-icon-user-solid', component: () => import(`@/views/admin/User.vue`), meta: { requireAuth: true } },
-      { path: "/ProductManage", name: '商品管理', icon: 'el-icon-shopping-bag-1', component: () => import(`@/views/admin/Product.vue`), meta: { requireAuth: true } },
-      { path: "/categoryManage", name: '商品类别管理', icon: 'el-icon-document-checked', component: () => import(`@/views/admin/Category.vue`), meta: { requireAuth: true } },
-      { path: "/evaluations", name: '评论管理', icon: 'el-icon-chat-dot-round', component: () => import(`@/views/admin/Evaluations.vue`), meta: { requireAuth: true } },
-    ]
+    path: "/adminLayout",
+    name: "AdminDashboard",
+    icon: "el-icon-pie-chart",
+    component: () => import("@/views/admin/Main.vue"),
+    meta: { requireAuth: true }
   },
   {
-    path: "/user", 
-    component: () => import(`@/views/user/Home.vue`),
+    path: "/userManage",
+    name: "UserManage",
+    icon: "el-icon-user-solid",
+    component: () => import("@/views/admin/User.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    path: "/ProductManage",
+    name: "ProductManage",
+    icon: "el-icon-shopping-bag-1",
+    component: () => import("@/views/admin/Product.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    path: "/categoryManage",
+    name: "CategoryManage",
+    icon: "el-icon-document-checked",
+    component: () => import("@/views/admin/Category.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    path: "/evaluations",
+    name: "EvaluationsManage",
+    icon: "el-icon-chat-dot-round",
+    component: () => import("@/views/admin/Evaluations.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    path: "/product-detail1",
+    name: "AdminProductDetail",
+    component: () => import("@/views/admin/ProductDetail.vue"),
+    meta: { requireAuth: true }
+  }
+];
+
+const userChildren = [
+  {
+    name: "UserProduct",
+    path: "/product",
+    component: () => import("@/views/user/Product.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "MyProduct",
+    path: "/myProduct",
+    component: () => import("@/views/user/MyProduct.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "MySave",
+    path: "/mySave",
+    component: () => import("@/views/user/MySave.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "MyView",
+    path: "/myView",
+    component: () => import("@/views/user/MyView.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "Orders",
+    path: "/orders",
+    component: () => import("@/views/user/Orders.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "Message",
+    path: "/message",
+    component: () => import("@/views/user/Message.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "Myself",
+    path: "/myself",
+    component: () => import("@/views/user/Myself.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "Search",
+    path: "/search",
+    show: false,
+    auth: false,
+    component: () => import("@/views/user/Search.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "PostProduct",
+    path: "/post-product",
+    component: () => import("@/views/user/PostProduct.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "EditProduct",
+    path: "/edit-product",
+    component: () => import("@/views/user/EditProduct.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "ProductDetailCompat",
+    path: "/product-detail",
+    component: () => import("@/views/user/ProductDetail.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "ProductDetail",
+    path: "/product/detail",
+    component: () => import("@/views/user/ProductDetail.vue"),
+    meta: { requireAuth: true }
+  }
+];
+
+const routes = [
+  { path: "/", component: () => import("@/views/user/Home.vue") },
+  { path: "/login", component: () => import("@/views/login/Login.vue") },
+  {
+    path: "/register",
+    component: () => import("@/views/register/Register.vue")
+  },
+  {
+    path: "/admin",
+    component: () => import("@/views/admin/Home.vue"),
     meta: { requireAuth: true },
-    children: [
-      { name: '用户', path: "/product", component: () => import(`@/views/user/Product.vue`), meta: { requireAuth: true } },
-      { name: '我的商品', path: "/myProduct", component: () => import(`@/views/user/MyProduct.vue`), meta: { requireAuth: true } },
-      { name: '我的收藏', path: "/mySave", component: () => import(`@/views/user/MySave.vue`), meta: { requireAuth: true } },
-      { name: '足迹', path: "/myView", component: () => import(`@/views/user/MyView.vue`), meta: { requireAuth: true } },
-      { name: '订单', path: "/orders", component: () => import(`@/views/user/Orders.vue`), meta: { requireAuth: true } },
-      { name: '消息', path: "/message", component: () => import(`@/views/user/Message.vue`), meta: { requireAuth: true } },
-      { name: '个人中心', path: "/myself", component: () => import(`@/views/user/Myself.vue`), meta: { requireAuth: true } },
-      { name: '搜索页', path: "/search", show: false, auth: false, component: () => import(`@/views/user/Search.vue`), meta: { requireAuth: true } },
-      { name: '发布商品', path: "/post-product", component: () => import(`@/views/user/PostProduct.vue`), meta: { requireAuth: true } },
-      { name: '商品详情', path: "/product/detail", component: () => import(`@/views/user/ProductDetail.vue`), meta: { requireAuth: true } },
-    ]
+    children: adminChildren
+  },
+  {
+    path: "/user",
+    component: () => import("@/views/user/Home.vue"),
+    meta: { requireAuth: true },
+    children: userChildren
   }
 ];
 
 const router = new VueRouter({
   routes,
-  mode: 'history'
+  mode: "history"
 });
+
 router.beforeEach((to, from, next) => {
-  // 放行登录页和注册页
-  if (to.path === '/login' || to.path === '/register') {
-    return next();
+  if (to.path === "/login" || to.path === "/register") {
+    next();
+    return;
   }
 
-  // 检查需要认证的路由
-  if (to.matched.some(record => record.meta.requireAuth)) {
-    const token = getToken();
-
-    // 未登录情况处理
-    if (!token) {
-      return next({
-        path: '/login',
-        query: { redirect: to.fullPath } // 记录目标路由
-      });
-    }
-
-    // 已登录时的权限检查
-    try {
-      const role = parseInt(sessionStorage.getItem('role'));
-      
-      // 管理员路径检查
-      if (to.matched[0].path === '/admin' && role !== 1) {
-        clearToken();
-        return next("/login"); //返回登录页
-      }
-
-      // 用户路径检查
-      if (to.matched[0].path === '/user' && role !== 2) {
-        clearToken();
-        return next("/login"); //返回登录页
-      }
-
-      return next();
-    } catch (error) {
-      console.error('权限检查失败:', error);
-      return next('/login');
-    }
+  if (!to.matched.some(record => record.meta.requireAuth)) {
+    next();
+    return;
   }
 
-  // 普通页面直接放行
-  next();
+  const token = getToken();
+  if (!token) {
+    next({
+      path: "/login",
+      query: { redirect: to.fullPath }
+    });
+    return;
+  }
+
+  try {
+    const role = Number(sessionStorage.getItem("role"));
+    const rootPath = to.matched[0] && to.matched[0].path;
+
+    if (rootPath === "/admin" && role !== 1) {
+      clearToken();
+      next("/login");
+      return;
+    }
+
+    if (rootPath === "/user" && role !== 2) {
+      clearToken();
+      next("/login");
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error("permission check failed:", error);
+    next("/login");
+  }
 });
+
 export default router;

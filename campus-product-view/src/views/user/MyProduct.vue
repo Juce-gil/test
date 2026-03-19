@@ -1,179 +1,180 @@
 <template>
-    <div class="product-list">
-        <el-row v-if="productList.length === 0">
-            <el-empty description="暂无商品信息"></el-empty>
-        </el-row>
-        <el-row v-else>
-            <el-col :span="6" v-for="(product, index) in productList" :key="index">
-                <div class="item-product">
-                    <div class="cover">
-                        <img :src="coverListParse(product)" alt="" srcset="">
-                    </div>
-                    <div style="display: flex;justify-content: left;gap: 4px;align-items: center;">
-                        <span class="bargain-hover">{{ product.isBargain ? '支持砍价' : '不支持砍价' }}</span>
-                        <span class="title" @click="route(product)">
-                            {{ product.name }}
-                        </span>
-                    </div>
-                    <div style="padding-block: 15px;">
-                        <span class="decimel-symbol">¥</span>
-                        <span class="price">{{ product.price }}</span>
-                        <span class="love">{{ product.likeNumber }}人想要</span>
-                    </div>
-                    <div>
-                        <span @click="handleEdit(product)" class="edit-button">编辑</span>
-                        <span @click="handleDelete(product)" class="channel-button">删除</span>
-                    </div>
-                </div>
-            </el-col>
-        </el-row>
-    </div>
-</template>
-<script>
-import { setProductInfo } from "@/utils/storage"
-export default {
-    name: 'MyProduct',
-    data() {
-        return {
-            productList: []
-        };
-    },
-    created() {
-        this.fetchProduct();
-    },
-    methods: {
-        route(product) {
-            // 跳转商品详情
-            this.$router.push('/product-detail?productId=' + product.id);
-        },
-        /**
-         * 商品编辑
-         * @param {*} product 待处理的商品信息
-         */
-        handleEdit(product) {
-            // 先将待操作商品信息存起来
-            setProductInfo(product);
-            this.$router.push('/edit-product');
-        },
-        /**
-         * 商品删除
-         * @param {*} product 待操作商品信息
-         */
-        async handleDelete(product) {
-            const confirmed = await this.$swalConfirm({
-                title: `删除【${product.name}】商品`,
-                text: `删除后不可恢复，是否继续？`,
-                icon: 'warning',
-            });
-            if (confirmed) {
-                try {
-                    let ids = [product.id]
-                    const response = await this.$axios.post(`/product/batchDelete`, ids);
-                    if (response.data.code === 200) {
-                        this.$notify({
-                            duration: 1000,
-                            title: '信息删除',
-                            message: '删除成功',
-                            type: 'success'
-                        });
-                        this.fetchProduct();
-                        return;
-                    }
-                } catch (error) {
-                    this.$notify({
-                        duration: 2000,
-                        title: '信息删除',
-                        message: error,
-                        type: 'error'
-                    });
-                    console.error(`商品信息删除异常：`, error);
-                }
-            }
+  <div class="my-product-page">
+    <UserPageSection
+      eyebrow="My goods"
+      title="我的商品"
+      description="集中管理你发布的校园闲置，支持快速查看、编辑与删除。"
+    >
+      <template #actions>
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          @click="$router.push('/post-product')"
+          >发布商品</el-button
+        >
+      </template>
 
-        },
-        /**
-         * 商品封面图处理
-         * 从字符串转成可用数组
-         * @param {*} product 待处理商品信息
-         */
-        coverListParse(product) {
-            if (product.coverList === null) {
-                return;
-            }
-            const newCoverList = product.coverList.split(',');
-            return newCoverList[0];
-        },
-        /**
-         * 查询用户自己发布的商品信息
-         */
-        fetchProduct() {
-            this.$axios.post('/product/queryUser', {}).then(res => {
-                const { data } = res; // 解构
-                if (data.code === 200) {
-                    this.productList = data.data;
-                }
-            }).catch(error => {
-                console.log("商品查询异常：", error);
-            })
-        },
+      <UserProductGrid
+        :items="productList"
+        empty-text="你还没有发布商品"
+        @select="route"
+      >
+        <template #summary="{ item }">
+          <div class="summary-row">
+            <span>{{ (item.likeNumber || 0) + " 人想要" }}</span>
+            <span class="summary-divider"></span>
+            <span>库存 {{ item.inventory || 0 }}</span>
+          </div>
+        </template>
+
+        <template #actions="{ item }">
+          <div class="action-row">
+            <button
+              type="button"
+              class="action-btn primary"
+              @click.stop="handleEdit(item)"
+            >
+              编辑
+            </button>
+            <button
+              type="button"
+              class="action-btn danger"
+              @click.stop="handleDelete(item)"
+            >
+              删除
+            </button>
+          </div>
+        </template>
+      </UserProductGrid>
+    </UserPageSection>
+  </div>
+</template>
+
+<script>
+import UserPageSection from "@/components/user/UserPageSection.vue";
+import UserProductGrid from "@/components/user/UserProductGrid.vue";
+import { setProductInfo } from "@/utils/storage";
+
+export default {
+  name: "MyProduct",
+  components: {
+    UserPageSection,
+    UserProductGrid
+  },
+  data() {
+    return {
+      productList: []
+    };
+  },
+  created() {
+    this.fetchProduct();
+  },
+  methods: {
+    route(product) {
+      this.$router.push({ path: "/product/detail", query: { id: product.id } });
+    },
+    handleEdit(product) {
+      setProductInfo(product);
+      this.$router.push("/edit-product");
+    },
+    async handleDelete(product) {
+      const confirmed = await this.$swalConfirm({
+        title: `删除「${product.name || "商品"}」`,
+        text: "删除后不可恢复，确定继续吗？",
+        icon: "warning"
+      });
+
+      if (!confirmed) return;
+
+      try {
+        const response = await this.$axios.post("/product/batchDelete", [
+          product.id
+        ]);
+        if (response.data.code === 200) {
+          this.$notify({
+            duration: 1200,
+            title: "删除成功",
+            message: response.data.msg || "商品已删除",
+            type: "success"
+          });
+          this.fetchProduct();
+        }
+      } catch (error) {
+        this.$notify({
+          duration: 2000,
+          title: "删除失败",
+          message: error,
+          type: "error"
+        });
+        console.error("商品删除异常：", error);
+      }
+    },
+    fetchProduct() {
+      this.$axios
+        .post("/product/queryUser", {})
+        .then(res => {
+          const { data } = res;
+          if (data.code === 200) {
+            this.productList = data.data || [];
+          } else {
+            this.productList = [];
+          }
+        })
+        .catch(error => {
+          console.log("商品查询异常：", error);
+          this.productList = [];
+        });
     }
+  }
 };
 </script>
+
 <style scoped lang="scss">
-.product-list {
-    padding-block: 20px;
+.summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-    .item-product {
-        padding: 10px 10px 16px 10px;
-        box-sizing: border-box;
-        border-radius: 15px;
-        transition: all .5s;
-        cursor: pointer;
+.summary-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
 
-        .cover {
-            img {
-                width: 100%;
-                height: 240px;
-                border-radius: 10px;
-            }
-        }
+.action-row {
+  display: flex;
+  gap: 10px;
+}
 
-        .bargain-hover {
-            font-size: 12px;
-            font-weight: 800;
-            background-color: rgb(255, 230, 15);
-            color: rgb(51, 51, 51);
-            border-radius: 2px;
-            padding: 2px 6px;
-        }
+.action-btn {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 
-        .title {
-            font-size: 20px;
-            color: #1f1f1f;
-        }
+.action-btn.primary {
+  background: #eff6ff;
+  color: #2563eb;
+}
 
-        .decimel-symbol {
-            font-size: 14px;
-            color: #ff4f24;
-            font-weight: 800;
-        }
+.action-btn.primary:hover {
+  background: #dbeafe;
+}
 
-        .price {
-            font-size: 24px;
-            color: #ff4f24;
-            font-weight: 800;
-            margin-right: 6px;
-        }
+.action-btn.danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
 
-        .love {
-            font-size: 14px;
-            color: #999;
-        }
-
-    }
-
-    .item-product:hover {
-        box-shadow: 1px 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
-    }
+.action-btn.danger:hover {
+  background: #fee2e2;
 }
 </style>

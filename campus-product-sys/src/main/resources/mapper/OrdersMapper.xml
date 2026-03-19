@@ -3,10 +3,20 @@
 <mapper namespace="cn.kmbeast.mapper.OrdersMapper">
 
   <insert id="save">
-    INSERT INTO orders (code, detail, user_id, product_id, buy_price, buy_number,trade_status, trade_time, refund_status,
-                        refund_time, is_refund_confirm, create_time)
-    VALUES (#{code}, #{detail}, #{userId}, #{productId}, #{buyPrice},#{buyNumber},#{tradeStatus}, #{tradeTime}, #{refundStatus},
-            #{refundTime}, #{isRefundConfirm}, #{createTime})
+    INSERT INTO orders (
+      code, detail, user_id, product_id, buy_price, buy_number, trade_status,
+      trade_time, refund_status, refund_time, is_refund_confirm, create_time,
+      address_id, is_confirm, is_confirm_time, is_deliver, deliver_adr_id, deliver_time,
+      appointment_time, appointment_address, seller_confirm_time, buyer_confirm_time,
+      seller_finish_time, cancel_time, cancel_reason
+    )
+    VALUES (
+      #{code}, #{detail}, #{userId}, #{productId}, #{buyPrice}, #{buyNumber}, #{tradeStatus},
+      #{tradeTime}, #{refundStatus}, #{refundTime}, #{isRefundConfirm}, #{createTime},
+      #{addressId}, #{isConfirm}, #{isConfirmTime}, #{isDeliver}, #{deliverAdrId}, #{deliverTime},
+      #{appointmentTime}, #{appointmentAddress}, #{sellerConfirmTime}, #{buyerConfirmTime},
+      #{sellerFinishTime}, #{cancelTime}, #{cancelReason}
+    )
   </insert>
 
   <update id="update">
@@ -36,6 +46,45 @@
       <if test="isRefundConfirm != null">
         is_refund_confirm = #{isRefundConfirm},
       </if>
+      <if test="addressId != null">
+        address_id = #{addressId},
+      </if>
+      <if test="isConfirm != null">
+        is_confirm = #{isConfirm},
+      </if>
+      <if test="isConfirmTime != null">
+        is_confirm_time = #{isConfirmTime},
+      </if>
+      <if test="isDeliver != null">
+        is_deliver = #{isDeliver},
+      </if>
+      <if test="deliverAdrId != null">
+        deliver_adr_id = #{deliverAdrId},
+      </if>
+      <if test="deliverTime != null">
+        deliver_time = #{deliverTime},
+      </if>
+      <if test="appointmentTime != null">
+        appointment_time = #{appointmentTime},
+      </if>
+      <if test="appointmentAddress != null and appointmentAddress != ''">
+        appointment_address = #{appointmentAddress},
+      </if>
+      <if test="sellerConfirmTime != null">
+        seller_confirm_time = #{sellerConfirmTime},
+      </if>
+      <if test="buyerConfirmTime != null">
+        buyer_confirm_time = #{buyerConfirmTime},
+      </if>
+      <if test="sellerFinishTime != null">
+        seller_finish_time = #{sellerFinishTime},
+      </if>
+      <if test="cancelTime != null">
+        cancel_time = #{cancelTime},
+      </if>
+      <if test="cancelReason != null and cancelReason != ''">
+        cancel_reason = #{cancelReason},
+      </if>
     </set>
     WHERE id = #{id}
   </update>
@@ -47,23 +96,28 @@
     </foreach>
   </delete>
 
-  <!--分页查询信息-->
   <select id="query" resultMap="BaseResultMap">
-
     SELECT o.*,
-    u.user_name,
-    u.user_avatar,
-    p.name AS product_title,
-    p.cover_list AS product_cover
+           buyer.user_name AS user_name,
+           buyer.user_avatar AS user_avatar,
+           p.name AS product_title,
+           p.cover_list AS product_cover,
+           p.user_id AS seller_id,
+           seller.user_name AS seller_name,
+           seller.user_avatar AS seller_avatar
     FROM orders o
-    LEFT JOIN user u ON u.id = o.user_id
-    LEFT JOIN product p ON p.id = o.product_id
+           LEFT JOIN user buyer ON buyer.id = o.user_id
+           LEFT JOIN product p ON p.id = o.product_id
+           LEFT JOIN user seller ON seller.id = p.user_id
     <where>
+      <if test="id != null">
+        AND o.id = #{id}
+      </if>
       <if test="code != null and code != ''">
-        AND o.code LIKE concat('%',#{code},'%')
+        AND o.code LIKE concat('%', #{code}, '%')
       </if>
       <if test="detail != null and detail != ''">
-        AND o.detail LIKE concat('%',#{detail},'%')
+        AND o.detail LIKE concat('%', #{detail}, '%')
       </if>
       <if test="userId != null">
         AND o.user_id = #{userId}
@@ -83,21 +137,22 @@
     </where>
     ORDER BY o.id DESC
     <if test="current != null and size != null">
-      LIMIT #{current},#{size}
+      LIMIT #{current}, #{size}
     </if>
   </select>
 
-  <!--满足分页条件的数据总项-->
   <select id="queryCount" resultType="integer">
-
     SELECT COUNT(*)
     FROM orders o
     <where>
+      <if test="id != null">
+        AND o.id = #{id}
+      </if>
       <if test="code != null and code != ''">
-        AND o.code LIKE concat('%',#{code},'%')
+        AND o.code LIKE concat('%', #{code}, '%')
       </if>
       <if test="detail != null and detail != ''">
-        AND o.detail LIKE concat('%',#{detail},'%')
+        AND o.detail LIKE concat('%', #{detail}, '%')
       </if>
       <if test="userId != null">
         AND o.user_id = #{userId}
@@ -115,18 +170,21 @@
         AND o.create_time BETWEEN #{startTime} AND #{endTime}
       </if>
     </where>
-
   </select>
 
   <select id="queryByProductIds" resultMap="BaseResultMap">
     SELECT o.*,
-    u.user_name,
-    u.user_avatar,
-    p.name AS product_title,
-    p.cover_list AS product_cover
+           buyer.user_name AS user_name,
+           buyer.user_avatar AS user_avatar,
+           p.name AS product_title,
+           p.cover_list AS product_cover,
+           p.user_id AS seller_id,
+           seller.user_name AS seller_name,
+           seller.user_avatar AS seller_avatar
     FROM orders o
-    LEFT JOIN user u ON u.id = o.user_id
-    LEFT JOIN product p ON p.id = o.product_id
+           LEFT JOIN user buyer ON buyer.id = o.user_id
+           LEFT JOIN product p ON p.id = o.product_id
+           LEFT JOIN user seller ON seller.id = p.user_id
     <where>
       <choose>
         <when test="productIds != null and productIds.size() &gt; 0">
@@ -143,13 +201,12 @@
         AND o.trade_status = #{tradeStatus}
       </if>
       <if test="code != null and code != ''">
-        AND o.code LIKE concat('%',#{code},'%')
+        AND o.code LIKE concat('%', #{code}, '%')
       </if>
     </where>
     ORDER BY o.id DESC
   </select>
 
-  <!-- 通用查询映射结果 -->
   <resultMap id="BaseResultMap" type="cn.kmbeast.pojo.vo.OrdersVO">
     <id column="id" property="id"/>
     <result column="code" property="code"/>
@@ -164,11 +221,25 @@
     <result column="refund_time" property="refundTime"/>
     <result column="is_refund_confirm" property="isRefundConfirm"/>
     <result column="create_time" property="createTime"/>
+    <result column="address_id" property="addressId"/>
+    <result column="is_confirm" property="isConfirm"/>
+    <result column="is_confirm_time" property="isConfirmTime"/>
+    <result column="is_deliver" property="isDeliver"/>
+    <result column="deliver_adr_id" property="deliverAdrId"/>
+    <result column="deliver_time" property="deliverTime"/>
+    <result column="appointment_time" property="appointmentTime"/>
+    <result column="appointment_address" property="appointmentAddress"/>
+    <result column="seller_confirm_time" property="sellerConfirmTime"/>
+    <result column="buyer_confirm_time" property="buyerConfirmTime"/>
+    <result column="seller_finish_time" property="sellerFinishTime"/>
+    <result column="cancel_time" property="cancelTime"/>
+    <result column="cancel_reason" property="cancelReason"/>
     <result column="user_name" property="userName"/>
     <result column="user_avatar" property="userAvatar"/>
     <result column="product_title" property="productTitle"/>
     <result column="product_cover" property="productCover"/>
+    <result column="seller_id" property="sellerId"/>
+    <result column="seller_name" property="sellerName"/>
+    <result column="seller_avatar" property="sellerAvatar"/>
   </resultMap>
-
-
 </mapper>

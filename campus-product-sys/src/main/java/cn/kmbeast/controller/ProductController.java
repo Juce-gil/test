@@ -17,7 +17,7 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * 商品控制器
+ * Product controller.
  */
 @RestController
 @RequestMapping("/product")
@@ -27,60 +27,35 @@ public class ProductController {
     private ProductService productService;
 
     /**
-     * 商品下单
-     *
-     * @param ordersDTO 参数
-     * @return Result<String> 响应结果
+     * Buyer creates a reservation request.
      */
-    @Log(detail = "商品下单")
+    @Log(detail = "reservation request")
     @PostMapping(value = "/buyProduct")
     @ResponseBody
     public Result<String> buyProduct(@RequestBody OrdersDTO ordersDTO) {
         return productService.buyProduct(ordersDTO);
     }
 
-
-    /**
-     * 新增
-     *
-     * @param product 参数
-     * @return Result<String> 响应结果
-     */
-    @Log(detail = "商品上架")
+    @Log(detail = "publish product")
     @PostMapping(value = "/save")
     @ResponseBody
     public Result<String> save(@RequestBody Product product) {
         return productService.save(product);
     }
 
-    /**
-     * 修改
-     *
-     * @param product 参数
-     * @return Result<String> 响应结果
-     */
-    @Log(detail = "商品修改")
+    @Log(detail = "update product")
     @PutMapping(value = "/update")
     @ResponseBody
     public Result<String> update(@RequestBody Product product) {
         return productService.update(product);
     }
 
-    /**
-     * 批量删除
-     */
     @PostMapping(value = "/batchDelete")
     @ResponseBody
     public Result<String> batchDelete(@RequestBody List<Integer> ids) {
         return productService.batchDelete(ids);
     }
 
-    /**
-     * 查询
-     *
-     * @param productQueryDto 查询参数
-     * @return Result<List < ProductVO>> 响应结果
-     */
     @Pager
     @PostMapping(value = "/query")
     @ResponseBody
@@ -89,11 +64,9 @@ public class ProductController {
     }
 
     /**
-     * 商品下单
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 响应结果
+     * Seller confirms the reservation request.
      */
+    @Log(detail = "seller confirm reservation")
     @PostMapping(value = "/placeAnOrder/{ordersId}")
     @ResponseBody
     public Result<String> placeAnOrder(@PathVariable Integer ordersId) {
@@ -101,12 +74,9 @@ public class ProductController {
     }
 
     /**
-     * 申请退款
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 响应结果
+     * Buyer or seller cancels the reservation.
      */
-    @Log(detail = "商品申请退款")
+    @Log(detail = "cancel reservation")
     @PostMapping(value = "/refund/{ordersId}")
     @ResponseBody
     public Result<String> refund(@PathVariable Integer ordersId) {
@@ -114,12 +84,9 @@ public class ProductController {
     }
 
     /**
-     * 确定收货
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 响应结果
+     * Buyer confirms offline trade completion.
      */
-    @Log(detail = "确定收货")
+    @Log(detail = "buyer confirm trade completion")
     @PostMapping(value = "/getGoods/{ordersId}")
     @ResponseBody
     public Result<String> getGoods(@PathVariable Integer ordersId) {
@@ -127,25 +94,25 @@ public class ProductController {
     }
 
     /**
-     * 商品发货
-     *
-     * @param ordersId 发货参数Dto
-     * @return Result<String> 响应结果
+     * Legacy body-based alias of seller completion confirmation.
      */
-    @Log(detail = "商品发货")
+    @Log(detail = "seller confirm trade completion legacy")
     @PostMapping(value = "/deliverGoods")
     @ResponseBody
-    public Result<String> deliverGoods(@RequestBody OrdersDeliverDto ordersId) {
-        return productService.deliverGoods(ordersId);
+    public Result<String> deliverGoods(@RequestBody OrdersDeliverDto ordersDeliverDto) {
+        return productService.deliverGoods(ordersDeliverDto);
     }
 
-
     /**
-     * 查询用户商品指标情况
-     *
-     * @param productQueryDto 查询参数
-     * @return Result<List < ChartVO>> 响应结果
+     * Seller confirms offline trade completion.
      */
+    @Log(detail = "seller confirm trade completion")
+    @PostMapping(value = "/confirmTradeBySeller/{ordersId}")
+    @ResponseBody
+    public Result<String> confirmTradeBySeller(@PathVariable Integer ordersId) {
+        return productService.confirmTradeBySeller(ordersId);
+    }
+
     @PostMapping(value = "/queryProductInfo")
     @ResponseBody
     public Result<List<ChartVO>> queryProductInfo(@RequestBody ProductQueryDto productQueryDto) {
@@ -153,12 +120,6 @@ public class ProductController {
         return productService.queryProductInfo(productQueryDto);
     }
 
-    /**
-     * 查询用户商品列表
-     *
-     * @param productQueryDto 查询参数
-     * @return Result<List < ProductVO>> 响应结果
-     */
     @PostMapping(value = "/queryUser")
     @ResponseBody
     public Result<List<ProductVO>> queryUser(@RequestBody ProductQueryDto productQueryDto) {
@@ -166,14 +127,10 @@ public class ProductController {
         return productService.query(productQueryDto);
     }
 
-    /**
-     * 通过商品ID查询用户商品列表
-     */
     @GetMapping(value = "/queryProductList/{id}")
     @ResponseBody
     public Result<List<ProductVO>> queryProductList(@PathVariable Integer id) {
         return productService.queryProductList(id);
     }
-
 }
 

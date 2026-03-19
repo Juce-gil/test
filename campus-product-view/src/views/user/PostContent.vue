@@ -13,7 +13,12 @@
 
           <div class="form-group">
             <label class="form-label">标题</label>
-            <el-input v-model="content.name" placeholder="请输入标题" class="form-input" clearable></el-input>
+            <el-input
+              v-model="content.name"
+              placeholder="请输入标题"
+              class="form-input"
+              clearable
+            ></el-input>
           </div>
         </div>
       </div>
@@ -22,12 +27,13 @@
       <div class="upload-section">
         <div class="form-card">
           <h2 class="card-title">封面图片</h2>
-          <el-upload 
-            class="avatar-uploader" 
+          <el-upload
+            class="avatar-uploader"
             :action="uploadAction"
-            :show-file-list="false" 
-            :on-success="handleAvatarSuccess">
-            <img v-if="content.cover" :src="content.cover" class="avatar">
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+          >
+            <img v-if="content.cover" :src="content.cover" class="avatar" />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </div>
@@ -35,15 +41,20 @@
         <!-- 动态详情编辑器 -->
         <div class="form-card">
           <h2 class="card-title">动态详情</h2>
-          <Editor height="400px" :receiveContent="content.detail" @on-receive="onReceive" />
+          <Editor
+            height="400px"
+            :receiveContent="content.detail"
+            @on-receive="onReceive"
+          />
         </div>
 
         <!-- 发布按钮 -->
-        <el-button 
-          type="primary" 
-          @click="postContent" 
-          class="publish-button" 
-          :loading="publishing">
+        <el-button
+          type="primary"
+          @click="postContent"
+          class="publish-button"
+          :loading="publishing"
+        >
           立即发布
         </el-button>
       </div>
@@ -57,51 +68,51 @@ import { API_BASE_URL } from "@/utils/request";
 
 export default {
   components: { Editor },
-  name: 'PostContent',
+  name: "PostContent",
   data() {
     return {
       uploadAction: API_BASE_URL + "/file/upload",
       publishing: false,
       content: {
-        name: '',
-        detail: '',
-        cover: ''
+        name: "",
+        detail: "",
+        cover: ""
       }
-    }
+    };
   },
   methods: {
     handleAvatarSuccess(res) {
       if (res.code === 200) {
         this.content.cover = res.data;
-        this.$message.success('封面图片上传成功');
+        this.$message.success("封面图片上传成功");
       } else {
-        this.$message.error('上传失败');
+        this.$message.error("上传失败");
       }
     },
 
     async postContent() {
       if (!this.content.name) {
-        this.$message.warning('请输入标题');
+        this.$message.warning("请输入标题");
         return;
       }
-      
+
       if (!this.content.cover) {
-        this.$message.warning('请上传封面图片');
+        this.$message.warning("请上传封面图片");
         return;
       }
 
       this.publishing = true;
       try {
-        const res = await this.$axios.post('/content/save', this.content);
+        const res = await this.$axios.post("/content/save", this.content);
         if (res.data.code === 200) {
-          this.$message.success('发布成功');
-          this.$router.push('/mycontent');
+          this.$message.success("发布成功");
+          this.$router.push("/mycontent");
         } else {
-          this.$message.warning(res.data.msg || '发布失败');
+          this.$message.warning(res.data.msg || "发布失败");
         }
       } catch (error) {
         console.error("发布动态异常:", error);
-        this.$message.error('发布失败');
+        this.$message.error("发布失败");
       } finally {
         this.publishing = false;
       }
@@ -111,7 +122,7 @@ export default {
       this.content.detail = detail;
     }
   }
-}
+};
 </script>
 
 <style scoped lang="scss">
@@ -159,13 +170,13 @@ export default {
       padding-left: 10px;
 
       &::before {
-        content: '';
+        content: "";
         position: absolute;
         left: 0;
         top: 4px;
         height: 16px;
         width: 4px;
-        background-color: #409EFF;
+        background-color: #409eff;
         border-radius: 2px;
       }
     }
@@ -211,7 +222,7 @@ export default {
       transition: all 0.3s;
 
       &:hover {
-        border-color: #409EFF;
+        border-color: #409eff;
       }
     }
   }
@@ -222,7 +233,7 @@ export default {
     font-size: 16px;
     margin-top: 20px;
     border-radius: 8px;
-    background: linear-gradient(90deg, #409EFF, #66b1ff);
+    background: linear-gradient(90deg, #409eff, #66b1ff);
     border: none;
     box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
     transition: all 0.3s;

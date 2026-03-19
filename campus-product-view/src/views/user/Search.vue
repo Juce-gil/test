@@ -1,172 +1,145 @@
 <template>
-    <div class="product-list">
-        <el-row v-if="productList.length === 0">
-            <el-empty description="暂无商品信息"></el-empty>
-        </el-row>
-        <el-row v-else>
-            <el-col :span="6" @click.native="route(product)" v-for="(product, index) in productList" :key="index">
-                <div class="item-product">
-                    <div class="cover">
-                        <img :src="coverListParse(product)" alt="" srcset="">
-                    </div>
-                    <div style="display: flex;justify-content: left;gap: 4px;align-items: center;">
-                        <span class="bargain-hover">{{ product.isBargain ? '支持砍价' : '不支持砍价' }}</span>
-                        <span class="title">
-                            {{ product.name }}
-                        </span>
-                    </div>
-                    <div style="padding-block: 15px;">
-                        <span class="decimel-symbol">¥</span>
-                        <span class="price">{{ product.price }}</span>
-                        <span class="love">4人想要</span>
-                    </div>
-                    <div class="info">
-                        <img :src="product.userAvatar" alt="" srcset="">
-                        <span>{{ product.userName }}</span>
-                    </div>
-                </div>
-            </el-col>
-        </el-row>
-    </div>
+  <div class="search-page">
+    <UserPageSection
+      eyebrow="Search"
+      title="搜索结果"
+      :description="searchDescription"
+    >
+      <template #actions>
+        <div class="keyword-badge">
+          <span>关键词</span>
+          <strong>{{ searchKey || "未输入" }}</strong>
+        </div>
+      </template>
+
+      <UserProductGrid
+        :items="productList"
+        :empty-text="searchKey ? '没有找到相关商品' : '请输入关键词开始搜索'"
+        :show-publisher="true"
+        @select="route"
+      >
+        <template #summary="{ item }">
+          <div class="summary-row">
+            <span>搜索命中商品</span>
+            <span class="summary-divider"></span>
+            <span>价格 ¥ {{ item.price != null ? item.price : "-" }}</span>
+          </div>
+        </template>
+      </UserProductGrid>
+    </UserPageSection>
+  </div>
 </template>
 
 <script>
+import UserPageSection from "@/components/user/UserPageSection.vue";
+import UserProductGrid from "@/components/user/UserProductGrid.vue";
 import { getSearchKey } from "@/utils/storage";
+
 export default {
-    data() {
-        return {
-            searchKey: '',
-            keyInterval: null, // 用于存储定时器的引用
-            productQueryDto: {},
-            productList: []
-        };
-    },
-    created() {
-        this.startKeyLoader(); // 启动定时器
-    },
-    beforeDestroy() {
-        this.clearKeyLoader(); // 清除定时器
-    },
-    methods: {
-        route(product) {
-            // 跳转商品详情
-            this.$router.push('/product-detail?productId=' + product.id);
-        },
-        coverListParse(product) {
-            if (product.coverList === null) {
-                return;
-            }
-            const newCoverList = product.coverList.split(',');
-            return newCoverList[0];
-        },
-        fetchProduct() {
-            this.productQueryDto.name = this.searchKey;
-            this.$axios.post('/product/query', this.productQueryDto).then(res => {
-                const { data } = res; // 解构
-                if (data.code === 200) {
-                    this.productList = data.data;
-                }
-            }).catch(error => {
-                console.log("商品查询异常：", error);
-            })
-        },
-        loadKey() {
-            const key = getSearchKey();
-            if (key !== this.searchKey) {
-                this.searchKey = key;
-                this.fetchProduct();
-            }
-        },
-        startKeyLoader() {
-            // 每隔一定时间调用 loadKey 方法
-            this.keyInterval = setInterval(() => {
-                this.loadKey();
-            }, 1000); // 每1000毫秒（1秒）调用一次
-        },
-        clearKeyLoader() {
-            // 清除定时器
-            if (this.keyInterval) {
-                clearInterval(this.keyInterval);
-                this.keyInterval = null; // 重置定时器引用
-            }
-        }
+  name: "Search",
+  components: {
+    UserPageSection,
+    UserProductGrid
+  },
+  data() {
+    return {
+      searchKey: "",
+      keyInterval: null,
+      productQueryDto: {},
+      productList: []
+    };
+  },
+  computed: {
+    searchDescription() {
+      if (!this.searchKey) {
+        return "在顶部搜索框输入关键词后，这里会展示相关商品。";
+      }
+      return `当前正在为你展示与「${this.searchKey}」相关的商品结果。`;
     }
+  },
+  created() {
+    this.loadKey();
+    this.startKeyLoader();
+  },
+  beforeDestroy() {
+    this.clearKeyLoader();
+  },
+  methods: {
+    route(product) {
+      this.$router.push({ path: "/product/detail", query: { id: product.id } });
+    },
+    fetchProduct() {
+      this.productQueryDto.name = this.searchKey || undefined;
+      this.$axios
+        .post("/product/query", this.productQueryDto)
+        .then(res => {
+          const { data } = res;
+          if (data.code === 200) {
+            this.productList = data.data || [];
+          } else {
+            this.productList = [];
+          }
+        })
+        .catch(error => {
+          console.log("搜索商品异常：", error);
+          this.productList = [];
+        });
+    },
+    loadKey() {
+      const key = getSearchKey() || "";
+      if (key !== this.searchKey) {
+        this.searchKey = key;
+        this.fetchProduct();
+      }
+    },
+    startKeyLoader() {
+      this.keyInterval = setInterval(() => {
+        this.loadKey();
+      }, 800);
+    },
+    clearKeyLoader() {
+      if (this.keyInterval) {
+        clearInterval(this.keyInterval);
+        this.keyInterval = null;
+      }
+    }
+  }
 };
 </script>
-<style lang="scss" scope>
-.product-list {
-    padding-block: 20px;
 
-    .item-product {
-        padding: 10px 10px 16px 10px;
-        box-sizing: border-box;
-        border-radius: 15px;
-        transition: all .5s;
-        cursor: pointer;
+<style scoped lang="scss">
+.keyword-badge {
+  min-width: 120px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+  text-align: right;
+}
 
-        .cover {
-            img {
-                width: 100%;
-                height: 240px;
-                border-radius: 10px;
-            }
-        }
+.keyword-badge span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
 
-        .bargain-hover {
-            font-size: 12px;
-            font-weight: 800;
-            background-color: rgb(255, 230, 15);
-            color: rgb(51, 51, 51);
-            border-radius: 2px;
-            padding: 2px 6px;
-        }
+.keyword-badge strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 16px;
+}
 
-        .title {
-            font-size: 20px;
-            color: #1f1f1f;
-        }
+.summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-        .decimel-symbol {
-            font-size: 14px;
-            color: #ff4f24;
-            font-weight: 800;
-        }
-
-        .price {
-            font-size: 24px;
-            color: #ff4f24;
-            font-weight: 800;
-            margin-right: 6px;
-        }
-
-        .love {
-            font-size: 14px;
-            color: #999;
-        }
-
-        .info {
-            display: flex;
-            justify-content: left;
-            align-items: center;
-            gap: 4px;
-
-            img {
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-            }
-
-            span {
-                font-size: 14px;
-                color: #999;
-            }
-        }
-
-
-    }
-
-    .item-product:hover {
-        box-shadow: 1px 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
-    }
+.summary-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #cbd5e1;
 }
 </style>

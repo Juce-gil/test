@@ -3,10 +3,14 @@
 <mapper namespace="cn.kmbeast.mapper.ProductMapper">
 
     <insert id="save">
-        INSERT INTO product (name, detail, cover_list, old_level, category_id, user_id, inventory, price, is_bargain,
-                             create_time)
-        VALUES (#{name}, #{detail}, #{coverList}, #{oldLevel}, #{categoryId}, #{userId}, #{inventory}, #{price},
-                #{isBargain}, #{createTime})
+        INSERT INTO product (
+            name, detail, cover_list, old_level, category_id, user_id, inventory,
+            price, is_bargain, status, audit_status, create_time
+        )
+        VALUES (
+            #{name}, #{detail}, #{coverList}, #{oldLevel}, #{categoryId}, #{userId}, #{inventory},
+            #{price}, #{isBargain}, #{status}, #{auditStatus}, #{createTime}
+        )
     </insert>
 
     <update id="update">
@@ -36,6 +40,12 @@
             <if test="isBargain != null">
                 is_bargain = #{isBargain},
             </if>
+            <if test="status != null and status != ''">
+                status = #{status},
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                audit_status = #{auditStatus},
+            </if>
         </set>
         WHERE id = #{id}
     </update>
@@ -47,42 +57,37 @@
         </foreach>
     </delete>
 
-    <!--分页查询信息-->
     <select id="queryById" resultMap="BaseResultMap">
-
         SELECT p.*,
-        u.user_name,
-        u.user_avatar,
-        c.name AS category_name,
-        (SELECT COUNT(i1.id) FROM interaction i1 WHERE i1.product_id = p.id AND type = 3) AS like_number,
-        (SELECT COUNT(i2.id) FROM interaction i2 WHERE i2.product_id = p.id AND type = 1) AS save_number,
-        (SELECT COUNT(i3.id) FROM interaction i3 WHERE i3.product_id = p.id AND type = 2) AS view_number
+               u.user_name,
+               u.user_avatar,
+               c.name AS category_name,
+               (SELECT COUNT(i1.id) FROM interaction i1 WHERE i1.product_id = p.id AND type = 3) AS like_number,
+               (SELECT COUNT(i2.id) FROM interaction i2 WHERE i2.product_id = p.id AND type = 1) AS save_number,
+               (SELECT COUNT(i3.id) FROM interaction i3 WHERE i3.product_id = p.id AND type = 2) AS view_number
         FROM product p
-        LEFT JOIN user u ON u.id = p.user_id
-        LEFT JOIN category c On c.id = p.category_id
+                 LEFT JOIN user u ON u.id = p.user_id
+                 LEFT JOIN category c ON c.id = p.category_id
         WHERE p.id = #{id}
     </select>
 
-
-    <!--分页查询信息-->
     <select id="query" resultMap="BaseResultMap">
-
         SELECT p.*,
-        u.user_name,
-        u.user_avatar,
-        c.name AS category_name,
-        (SELECT COUNT(i1.id) FROM interaction i1 WHERE i1.product_id = p.id AND type = 3) AS like_number,
-        (SELECT COUNT(i2.id) FROM interaction i2 WHERE i2.product_id = p.id AND type = 1) AS save_number,
-        (SELECT COUNT(i3.id) FROM interaction i3 WHERE i3.product_id = p.id AND type = 2) AS view_number
+               u.user_name,
+               u.user_avatar,
+               c.name AS category_name,
+               (SELECT COUNT(i1.id) FROM interaction i1 WHERE i1.product_id = p.id AND type = 3) AS like_number,
+               (SELECT COUNT(i2.id) FROM interaction i2 WHERE i2.product_id = p.id AND type = 1) AS save_number,
+               (SELECT COUNT(i3.id) FROM interaction i3 WHERE i3.product_id = p.id AND type = 2) AS view_number
         FROM product p
-        LEFT JOIN user u ON u.id = p.user_id
-        LEFT JOIN category c On c.id = p.category_id
+                 LEFT JOIN user u ON u.id = p.user_id
+                 LEFT JOIN category c ON c.id = p.category_id
         <where>
             <if test="id != null">
                 AND p.id = #{id}
             </if>
             <if test="name != null and name != ''">
-                AND p.name LIKE concat('%',#{name},'%')
+                AND p.name LIKE concat('%', #{name}, '%')
             </if>
             <if test="categoryId != null">
                 AND p.category_id = #{categoryId}
@@ -92,6 +97,12 @@
             </if>
             <if test="isBargain != null">
                 AND p.is_bargain = #{isBargain}
+            </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND p.audit_status = #{auditStatus}
             </if>
             <if test="startTime != null and endTime != null">
                 AND p.create_time BETWEEN #{startTime} AND #{endTime}
@@ -99,13 +110,11 @@
         </where>
         ORDER BY p.id DESC
         <if test="current != null and size != null">
-            LIMIT #{current},#{size}
+            LIMIT #{current}, #{size}
         </if>
     </select>
 
-    <!--满足分页条件的数据总项-->
     <select id="queryCount" resultType="integer">
-
         SELECT COUNT(*)
         FROM product p
         <where>
@@ -113,7 +122,7 @@
                 AND p.id = #{id}
             </if>
             <if test="name != null and name != ''">
-                AND p.name LIKE concat('%',#{name},'%')
+                AND p.name LIKE concat('%', #{name}, '%')
             </if>
             <if test="categoryId != null">
                 AND p.category_id = #{categoryId}
@@ -124,11 +133,16 @@
             <if test="isBargain != null">
                 AND p.is_bargain = #{isBargain}
             </if>
+            <if test="status != null and status != ''">
+                AND p.status = #{status}
+            </if>
+            <if test="auditStatus != null and auditStatus != ''">
+                AND p.audit_status = #{auditStatus}
+            </if>
             <if test="startTime != null and endTime != null">
                 AND p.create_time BETWEEN #{startTime} AND #{endTime}
             </if>
         </where>
-
     </select>
 
     <select id="queryProductIds" resultType="java.lang.Integer">
@@ -144,14 +158,13 @@
                c.name AS category_name
         FROM product p
                  LEFT JOIN user u ON u.id = p.user_id
-                 LEFT JOIN category c On c.id = p.category_id
+                 LEFT JOIN category c ON c.id = p.category_id
         WHERE p.id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </select>
 
-    <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="cn.kmbeast.pojo.vo.ProductVO">
         <id column="id" property="id"/>
         <result column="name" property="name"/>
@@ -163,6 +176,8 @@
         <result column="inventory" property="inventory"/>
         <result column="price" property="price"/>
         <result column="is_bargain" property="isBargain"/>
+        <result column="status" property="status"/>
+        <result column="audit_status" property="auditStatus"/>
         <result column="create_time" property="createTime"/>
         <result column="user_name" property="userName"/>
         <result column="user_avatar" property="userAvatar"/>
@@ -171,6 +186,4 @@
         <result column="save_number" property="saveNumber"/>
         <result column="view_number" property="viewNumber"/>
     </resultMap>
-
-
 </mapper>

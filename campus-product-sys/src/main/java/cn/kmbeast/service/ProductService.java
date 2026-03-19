@@ -3,7 +3,6 @@ package cn.kmbeast.service;
 import cn.kmbeast.pojo.api.Result;
 import cn.kmbeast.pojo.dto.query.extend.ProductQueryDto;
 import cn.kmbeast.pojo.dto.update.OrdersDTO;
-import cn.kmbeast.pojo.entity.Orders;
 import cn.kmbeast.pojo.entity.Product;
 import cn.kmbeast.pojo.vo.ChartVO;
 import cn.kmbeast.pojo.vo.OrdersDeliverDto;
@@ -12,7 +11,7 @@ import cn.kmbeast.pojo.vo.ProductVO;
 import java.util.List;
 
 /**
- * 商品的业务逻辑接口
+ * Product service.
  */
 public interface ProductService {
 
@@ -36,6 +35,13 @@ public interface ProductService {
 
     Result<List<ProductVO>> queryProductList(Integer id);
 
+    /**
+     * Legacy alias: seller confirms trade completion.
+     */
     Result<String> deliverGoods(OrdersDeliverDto ordersDeliverDto);
 
+    /**
+     * Seller confirms the offline trade has been completed.
+     */
+    Result<String> confirmTradeBySeller(Integer ordersId);
 }

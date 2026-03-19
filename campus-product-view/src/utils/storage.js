@@ -1,34 +1,66 @@
-const TOKEN_KEY = "token"
+const TOKEN_KEY = "token";
 const USER_INFO = "userInfo";
 const SEARCH_KEY = "searchKey";
-//获取搜索关键词
+const PRODUCT_INFO = "productInfo";
+
+function parseSessionJSON(key) {
+  const rawValue = sessionStorage.getItem(key);
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue);
+  } catch (error) {
+    console.warn(`failed to parse session storage for key: ${key}`, error);
+    return null;
+  }
+}
+
 export function getSearchKey() {
-    return sessionStorage.getItem(SEARCH_KEY);
+  return sessionStorage.getItem(SEARCH_KEY);
 }
-//存储搜索关键词
+
 export function setSearchKey(key) {
-    sessionStorage.setItem(SEARCH_KEY, key);
+  sessionStorage.setItem(SEARCH_KEY, key || "");
 }
-//获取用户类别信息
+
+export function clearSearchKey() {
+  sessionStorage.removeItem(SEARCH_KEY);
+}
+
 export function getUserInfo() {
-    const jsonUserInfo = sessionStorage.getItem(USER_INFO);
-    return JSON.parse(jsonUserInfo);
+  return parseSessionJSON(USER_INFO);
 }
-//存储用户类别信息
+
 export function setUserInfo(userInfo) {
-    sessionStorage.setItem(USER_INFO, JSON.stringify(userInfo));
+  sessionStorage.setItem(USER_INFO, JSON.stringify(userInfo || null));
 }
-//获取token
+
+export function getProductInfo() {
+  return parseSessionJSON(PRODUCT_INFO);
+}
+
+export function setProductInfo(productInfo) {
+  sessionStorage.setItem(PRODUCT_INFO, JSON.stringify(productInfo || null));
+}
+
+export function clearProductInfo() {
+  sessionStorage.removeItem(PRODUCT_INFO);
+}
+
 export function getToken() {
-    return sessionStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
-// 设置token
+
 export function setToken(token) {
-    sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_KEY, token);
 }
-// 清除token
+
 export function clearToken() {
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(USER_INFO);
-    sessionStorage.removeItem('role');
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_INFO);
+  sessionStorage.removeItem("role");
+  clearSearchKey();
+  clearProductInfo();
 }

@@ -29,10 +29,22 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 商品类别业务逻辑接口实现类
+ * Product service implementation.
  */
 @Service
 public class ProductServiceImpl implements ProductService {
+
+    private static final Integer ORDER_STATUS_PENDING_CONFIRM = 1;
+    private static final Integer ORDER_STATUS_RESERVED = 2;
+    private static final Integer ORDER_STATUS_PARTIAL_CONFIRMED = 3;
+    private static final Integer ORDER_STATUS_COMPLETED = 4;
+    private static final Integer ORDER_STATUS_CANCELLED = 5;
+
+    private static final String PRODUCT_STATUS_ON_SALE = "ON_SALE";
+    private static final String PRODUCT_STATUS_RESERVED = "RESERVED";
+    private static final String PRODUCT_STATUS_SOLD = "SOLD";
+    private static final String PRODUCT_STATUS_OFFLINE = "OFFLINE";
+    private static final String PRODUCT_AUDIT_APPROVED = "APPROVED";
 
     @Resource
     private ProductMapper productMapper;
@@ -41,114 +53,79 @@ public class ProductServiceImpl implements ProductService {
     @Resource
     private InteractionMapper interactionMapper;
 
-    private final static Integer AWAITING_PAY = 1; // 待支付状态
-    private final static Integer OK_PAY = 2; // 已支付状态
-    private final static Integer REPLY_REFUND = 2; // 申请退款
-
-    /**
-     * 商品发货
-     *
-     * @param ordersDeliverDto 发货参数Dto
-     * @return Result<String> 响应结果
-     */
     @Override
     public Result<String> deliverGoods(OrdersDeliverDto ordersDeliverDto) {
-        if (ordersDeliverDto.getOrdersId() == null) {
-            return ApiResult.error("订单ID不能为空");
+        if (ordersDeliverDto == null || ordersDeliverDto.getOrdersId() == null) {
+            return ApiResult.error("order id cannot be empty");
         }
-        if (ordersDeliverDto.getDeliverAdrId() == null) {
-            return ApiResult.error("请设置商家发货地址");
-        }
-        Orders orders = new Orders();
-        orders.setId(ordersDeliverDto.getOrdersId()); // 设置订单ID
-        orders.setDeliverAdrId(ordersDeliverDto.getDeliverAdrId()); // 设置商家发货地址ID
-        orders.setDeliverTime(LocalDateTime.now()); // 设置发货时间
-        orders.setIsDeliver(true); // 发货状态设置成已发货状态
-        ordersMapper.update(orders);
-        return ApiResult.success("商品发货成功");
+        return confirmTradeBySeller(ordersDeliverDto.getOrdersId());
     }
 
-
-    /**
-     * 新增
-     *
-     * @param product 参数
-     * @return Result<String> 后台通用返回封装类
-     */
     @Override
     public Result<String> save(Product product) {
         if (!StringUtils.hasText(product.getName())) {
-            return ApiResult.error("商品名不能为空");
+            return ApiResult.error("product name cannot be empty");
         }
         if (!StringUtils.hasText(product.getCoverList())) {
-            return ApiResult.error("请上传商品封面");
+            return ApiResult.error("product cover cannot be empty");
         }
         if (product.getPrice() == null) {
-            return ApiResult.error("请填写价格");
-        }
-        if (product.getInventory() == null) {
-            return ApiResult.error("库存不能为空");
+            return ApiResult.error("product price cannot be empty");
         }
         if (product.getCategoryId() == null) {
-            return ApiResult.error("请选择商品分类");
+            return ApiResult.error("product category cannot be empty");
+        }
+        if (product.getInventory() == null || product.getInventory() <= 0) {
+            product.setInventory(1);
         }
         if (product.getIsBargain() == null) {
             product.setIsBargain(false);
         }
+        if (!StringUtils.hasText(product.getStatus())) {
+            product.setStatus(PRODUCT_STATUS_ON_SALE);
+        }
+        if (!StringUtils.hasText(product.getAuditStatus())) {
+            product.setAuditStatus(PRODUCT_AUDIT_APPROVED);
+        }
         product.setUserId(LocalThreadHolder.getUserId());
         product.setCreateTime(LocalDateTime.now());
         productMapper.save(product);
-        return ApiResult.success("商品新增成功");
+        return ApiResult.success("product published successfully");
     }
 
-    /**
-     * 修改
-     *
-     * @param product 参数
-     * @return Result<String> 后台通用返回封装类
-     */
     @Override
     public Result<String> update(Product product) {
+        if (product.getId() == null) {
+            return ApiResult.error("product id cannot be empty");
+        }
         if (!StringUtils.hasText(product.getName())) {
-            return ApiResult.error("商品名不能为空");
+            return ApiResult.error("product name cannot be empty");
         }
         if (!StringUtils.hasText(product.getCoverList())) {
-            return ApiResult.error("请上传商品封面");
+            return ApiResult.error("product cover cannot be empty");
         }
         if (product.getPrice() == null) {
-            return ApiResult.error("请填写价格");
-        }
-        if (product.getInventory() == null) {
-            return ApiResult.error("库存不能为空");
+            return ApiResult.error("product price cannot be empty");
         }
         if (product.getCategoryId() == null) {
-            return ApiResult.error("请选择商品分类");
+            return ApiResult.error("product category cannot be empty");
+        }
+        if (product.getInventory() == null || product.getInventory() <= 0) {
+            product.setInventory(1);
         }
         if (product.getIsBargain() == null) {
             product.setIsBargain(false);
         }
         productMapper.update(product);
-        return ApiResult.success("商品修改成功");
+        return ApiResult.success("product updated successfully");
     }
 
-    /**
-     * 删除
-     *
-     * @param ids 待删除ID集合
-     * @return Result<String> 后台通用返回封装类
-     */
     @Override
     public Result<String> batchDelete(List<Integer> ids) {
         productMapper.batchDelete(ids);
-        return ApiResult.success("商品删除成功");
+        return ApiResult.success("products deleted successfully");
     }
 
-    /**
-     * 查询
-     *
-     * @param productQueryDto 查询参数
-     * @return Result<List < ProductVO>> 后台通用返回封装类
-     */
     @Override
     public Result<List<ProductVO>> query(ProductQueryDto productQueryDto) {
         int totalCount = productMapper.queryCount(productQueryDto);
@@ -156,181 +133,216 @@ public class ProductServiceImpl implements ProductService {
         return ApiResult.success(productVOList, totalCount);
     }
 
-    /**
-     * 商品下单
-     *
-     * @param ordersDTO 订单
-     * @return Result<String>
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<String> buyProduct(OrdersDTO ordersDTO) {
-        if (ordersDTO.getProductId() == null) {
-            return ApiResult.error("商品ID不为空");
+    public synchronized Result<String> buyProduct(OrdersDTO ordersDTO) {
+        if (ordersDTO == null || ordersDTO.getProductId() == null) {
+            return ApiResult.error("product id cannot be empty");
         }
-        ProductQueryDto productQueryDto = new ProductQueryDto();
-        productQueryDto.setId(ordersDTO.getProductId());
-        List<ProductVO> productVOS = productMapper.query(productQueryDto);
-        if (productVOS.isEmpty()) {
-            return ApiResult.error("商品信息异常");
+        ProductVO productVO = getProductById(ordersDTO.getProductId());
+        if (productVO == null) {
+            return ApiResult.error("product not found");
         }
-        // 有且仅有一条商品信息
-        ProductVO productVO = productVOS.get(0);
-        // 判断库存情况
-        if (productVO.getInventory() <= 0
-                || (productVO.getInventory() - ordersDTO.getBuyNumber()) < 0) {
-            return ApiResult.error("商品库存不足");
+        if (Objects.equals(productVO.getUserId(), LocalThreadHolder.getUserId())) {
+            return ApiResult.error("you cannot reserve your own product");
         }
-        createOrders(ordersDTO, productVO);
-        ordersMapper.save(ordersDTO);
-        // 扣库存
-        Product product = new Product();
-        product.setId(productVO.getId());
-        product.setInventory(productVO.getInventory() - ordersDTO.getBuyNumber());
-        productMapper.update(product);
+        if (productVO.getInventory() == null || productVO.getInventory() <= 0) {
+            return ApiResult.error("product inventory is not available");
+        }
+        if (!PRODUCT_STATUS_ON_SALE.equals(resolveProductStatus(productVO.getStatus()))) {
+            return ApiResult.error("product is not available for reservation");
+        }
+        Integer buyNumber = ordersDTO.getBuyNumber();
+        if (buyNumber == null) {
+            buyNumber = 1;
+        }
+        if (!Objects.equals(buyNumber, 1)) {
+            return ApiResult.error("only one item can be reserved at a time");
+        }
+        if (hasActiveReservation(productVO.getId())) {
+            return ApiResult.error("product already has an active reservation");
+        }
 
-        return ApiResult.success("下单成功");
+        createReservationOrder(ordersDTO, productVO);
+        ordersMapper.save(ordersDTO);
+        return ApiResult.success("reservation request submitted, waiting for seller confirmation");
     }
 
-    /**
-     * 设置订单所需参数
-     *
-     * @param orders    订单
-     * @param productVO 商品信息
-     */
-    private void createOrders(Orders orders, ProductVO productVO) {
+    private void createReservationOrder(Orders orders, ProductVO productVO) {
         orders.setCode(createOrdersCode());
         orders.setUserId(LocalThreadHolder.getUserId());
-        orders.setTradeStatus(AWAITING_PAY); // 初始时，未交易成功
+        orders.setBuyNumber(1);
+        orders.setTradeStatus(ORDER_STATUS_PENDING_CONFIRM);
         orders.setBuyPrice(productVO.getPrice());
         orders.setCreateTime(LocalDateTime.now());
     }
 
-    /**
-     * 生成订单号
-     *
-     * @return String
-     */
     private String createOrdersCode() {
-        // UUID
-        //String ordersCode = UUID.randomUUID().toString().toLowerCase();
-        // 时间戳
         long timeMillis = System.currentTimeMillis();
         return String.valueOf(timeMillis);
     }
 
-    /**
-     * 商品下单
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 通用返回封装类
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<String> placeAnOrder(Integer ordersId) {
+        OrdersVO ordersVO = getOrderById(ordersId);
+        if (ordersVO == null) {
+            return ApiResult.error("order not found");
+        }
+        if (!Objects.equals(ordersVO.getSellerId(), LocalThreadHolder.getUserId())) {
+            return ApiResult.error("only the seller can confirm this reservation");
+        }
+        if (!Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_PENDING_CONFIRM)) {
+            return ApiResult.error("current order status does not allow reservation confirmation");
+        }
+
         Orders orders = new Orders();
         orders.setId(ordersId);
-        orders.setTradeStatus(OK_PAY); // 已支付状态
-        orders.setIsConfirm(false);// 未收货
-        orders.setTradeTime(LocalDateTime.now());
+        orders.setTradeStatus(ORDER_STATUS_RESERVED);
+        LocalDateTime confirmTime = LocalDateTime.now();
+        orders.setSellerConfirmTime(confirmTime);
         ordersMapper.update(orders);
-        return ApiResult.success("下单成功");
+
+        Product product = new Product();
+        product.setId(ordersVO.getProductId());
+        product.setStatus(PRODUCT_STATUS_RESERVED);
+        product.setInventory(0);
+        productMapper.update(product);
+        return ApiResult.success("seller confirmed reservation, product locked as RESERVED");
     }
 
-    /**
-     * 申请退款
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 响应结果
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<String> refund(Integer ordersId) {
-        OrdersQueryDto ordersQueryDto = new OrdersQueryDto();
-        ordersQueryDto.setId(ordersId);
-        ordersQueryDto.setRefundStatus(1);
-        ordersQueryDto.setUserId(LocalThreadHolder.getUserId());
-        int queryCount = ordersMapper.queryCount(ordersQueryDto);
-        if (queryCount > 0) { // 存在未审核退款记录
-            return ApiResult.error("您已申请退款，待卖家审核，请勿重复申请");
+        OrdersVO ordersVO = getOrderById(ordersId);
+        if (ordersVO == null) {
+            return ApiResult.error("order not found");
         }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_COMPLETED)) {
+            return ApiResult.error("completed reservations cannot be cancelled");
+        }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_CANCELLED)) {
+            return ApiResult.error("reservation has already been cancelled");
+        }
+        Integer currentUserId = LocalThreadHolder.getUserId();
+        boolean buyer = Objects.equals(ordersVO.getUserId(), currentUserId);
+        boolean seller = Objects.equals(ordersVO.getSellerId(), currentUserId);
+        if (!buyer && !seller) {
+            return ApiResult.error("only the buyer or seller can cancel this reservation");
+        }
+
         Orders orders = new Orders();
         orders.setId(ordersId);
-        orders.setRefundStatus(REPLY_REFUND);
+        orders.setTradeStatus(ORDER_STATUS_CANCELLED);
+        orders.setCancelTime(LocalDateTime.now());
+        orders.setCancelReason(seller ? "seller cancelled reservation" : "buyer cancelled reservation");
         ordersMapper.update(orders);
-        return ApiResult.success("申请退款成功，请等待卖家审核");
+
+        restoreProductToSale(ordersVO.getProductId());
+        return ApiResult.success(seller ? "seller cancelled the reservation" : "reservation cancelled successfully");
     }
 
-    /**
-     * 确定收货
-     *
-     * @param ordersId 订单ID
-     * @return Result<String> 响应结果
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<String> getGoods(Integer ordersId) {
-        OrdersQueryDto ordersQueryDto = new OrdersQueryDto();
-        ordersQueryDto.setId(ordersId);
-        ordersQueryDto.setUserId(LocalThreadHolder.getUserId());
-        List<OrdersVO> ordersVOList = ordersMapper.query(ordersQueryDto);
-        if (ordersVOList.isEmpty()) {
-            return ApiResult.error("订单异常");
+        OrdersVO ordersVO = getOrderById(ordersId);
+        if (ordersVO == null) {
+            return ApiResult.error("order not found");
         }
-        OrdersVO ordersVO = ordersVOList.get(0);
-        if (ordersVO.getIsDeliver() == null) { // 未发货
-            if (ordersVO.getIsRefundConfirm() != null && ordersVO.getIsRefundConfirm()) {
-                Orders orders = new Orders();
-                orders.setId(ordersId);
-                orders.setIsConfirm(true);
-                orders.setIsConfirmTime(LocalDateTime.now());
-                ordersMapper.update(orders);
-            } else {
-                return ApiResult.error("卖家未发货哦");
-            }
+        if (!Objects.equals(ordersVO.getUserId(), LocalThreadHolder.getUserId())) {
+            return ApiResult.error("only the buyer can confirm trade completion");
         }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_CANCELLED)) {
+            return ApiResult.error("reservation has already been cancelled");
+        }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_COMPLETED)) {
+            return ApiResult.error("order has already been completed");
+        }
+        if (!Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_RESERVED)
+                && !Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_PARTIAL_CONFIRMED)) {
+            return ApiResult.error("seller has not confirmed the reservation yet");
+        }
+        if (Boolean.TRUE.equals(ordersVO.getIsConfirm()) || ordersVO.getBuyerConfirmTime() != null) {
+            return ApiResult.error("buyer has already confirmed this trade");
+        }
+
         Orders orders = new Orders();
-        orders.setId(ordersVO.getId()); // 设置订单ID
-        orders.setIsConfirm(true); // 已确认收货
-        orders.setIsConfirmTime(LocalDateTime.now()); // 确认收货时间
+        orders.setId(ordersId);
+        orders.setIsConfirm(true);
+        LocalDateTime confirmTime = LocalDateTime.now();
+        orders.setBuyerConfirmTime(confirmTime);
+
+        if (Boolean.TRUE.equals(ordersVO.getIsRefundConfirm()) || ordersVO.getSellerFinishTime() != null) {
+            orders.setTradeStatus(ORDER_STATUS_COMPLETED);
+            ordersMapper.update(orders);
+            markProductAsSold(ordersVO.getProductId());
+            return ApiResult.success("both parties confirmed completion, product marked as SOLD");
+        }
+
+        orders.setTradeStatus(ORDER_STATUS_PARTIAL_CONFIRMED);
         ordersMapper.update(orders);
-        return ApiResult.success("确定收货成功");
+        return ApiResult.success("buyer confirmed meetup completion, waiting for seller confirmation");
     }
 
-    /**
-     * 查询用户商品指标情况
-     *
-     * @param productQueryDto 查询参数
-     * @return Result<List < ChartVO>> 响应结果
-     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result<String> confirmTradeBySeller(Integer ordersId) {
+        OrdersVO ordersVO = getOrderById(ordersId);
+        if (ordersVO == null) {
+            return ApiResult.error("order not found");
+        }
+        if (!Objects.equals(ordersVO.getSellerId(), LocalThreadHolder.getUserId())) {
+            return ApiResult.error("only the seller can confirm trade completion");
+        }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_CANCELLED)) {
+            return ApiResult.error("reservation has already been cancelled");
+        }
+        if (Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_COMPLETED)) {
+            return ApiResult.error("order has already been completed");
+        }
+        if (!Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_RESERVED)
+                && !Objects.equals(ordersVO.getTradeStatus(), ORDER_STATUS_PARTIAL_CONFIRMED)) {
+            return ApiResult.error("current order is not in the completion confirmation stage");
+        }
+        if (Boolean.TRUE.equals(ordersVO.getIsRefundConfirm()) || ordersVO.getSellerFinishTime() != null) {
+            return ApiResult.error("seller has already confirmed this trade");
+        }
+
+        Orders orders = new Orders();
+        orders.setId(ordersId);
+        orders.setIsRefundConfirm(true);
+        LocalDateTime confirmTime = LocalDateTime.now();
+        orders.setSellerFinishTime(confirmTime);
+
+        if (Boolean.TRUE.equals(ordersVO.getIsConfirm()) || ordersVO.getBuyerConfirmTime() != null) {
+            orders.setTradeStatus(ORDER_STATUS_COMPLETED);
+            ordersMapper.update(orders);
+            markProductAsSold(ordersVO.getProductId());
+            return ApiResult.success("both parties confirmed completion, product marked as SOLD");
+        }
+
+        orders.setTradeStatus(ORDER_STATUS_PARTIAL_CONFIRMED);
+        ordersMapper.update(orders);
+        return ApiResult.success("seller confirmed meetup completion, waiting for buyer confirmation");
+    }
+
     @Override
     public Result<List<ChartVO>> queryProductInfo(ProductQueryDto productQueryDto) {
         List<Integer> productIds = productMapper.queryProductIds(productQueryDto.getUserId());
-        if (productIds.isEmpty()) {
-            return ApiResult.success(new ArrayList<>());
+        if (productIds == null || productIds.isEmpty()) {
+            return ApiResult.success(new ArrayList<ChartVO>());
         }
         List<Interaction> interactionList = interactionMapper.queryByProductIds(productIds);
-        // 浏览、收藏、想要
         long viewCount = getProductCount(interactionList, InteractionEnum.VIEW.getType());
         long saveCount = getProductCount(interactionList, InteractionEnum.SAVE.getType());
         long loveCount = getProductCount(interactionList, InteractionEnum.LOVE.getType());
-        List<ChartVO> chartVOList = new ArrayList<>();
-        ChartVO chartVOView = new ChartVO("商品被浏览", (int) viewCount);
-        ChartVO chartVOSave = new ChartVO("商品被收藏", (int) saveCount);
-        ChartVO chartVOLove = new ChartVO("商品被想要", (int) loveCount);
-        chartVOList.add(chartVOView);
-        chartVOList.add(chartVOSave);
-        chartVOList.add(chartVOLove);
+        List<ChartVO> chartVOList = new ArrayList<ChartVO>();
+        chartVOList.add(new ChartVO("Product Views", (int) viewCount));
+        chartVOList.add(new ChartVO("Product Favorites", (int) saveCount));
+        chartVOList.add(new ChartVO("Product Wants", (int) loveCount));
         return ApiResult.success(chartVOList);
     }
 
-    /**
-     * 过滤指定的商品指标数据
-     *
-     * @param interactionList 互动数据源
-     * @param type            互动类型
-     * @return long
-     */
     private long getProductCount(List<Interaction> interactionList, Integer type) {
         return interactionList.stream()
                 .filter(interaction -> Objects.equals(type, interaction.getType()))
@@ -341,14 +353,80 @@ public class ProductServiceImpl implements ProductService {
     public Result<List<ProductVO>> queryProductList(Integer id) {
         ProductVO productVO = productMapper.queryById(id);
         if (productVO == null) {
-            return ApiResult.error("商品不存在");
+            return ApiResult.error("product not found");
         }
-        Integer userId = productVO.getUserId();
         ProductQueryDto productQueryDto = new ProductQueryDto();
-        productQueryDto.setUserId(userId);
+        productQueryDto.setUserId(productVO.getUserId());
         List<ProductVO> productVOS = productMapper.query(productQueryDto);
         return ApiResult.success(productVOS);
     }
 
+    private ProductVO getProductById(Integer productId) {
+        return productMapper.queryById(productId);
+    }
 
+    private OrdersVO getOrderById(Integer ordersId) {
+        if (ordersId == null) {
+            return null;
+        }
+        OrdersQueryDto queryDto = new OrdersQueryDto();
+        queryDto.setId(ordersId);
+        List<OrdersVO> ordersVOList = ordersMapper.query(queryDto);
+        if (ordersVOList == null || ordersVOList.isEmpty()) {
+            return null;
+        }
+        return ordersVOList.get(0);
+    }
+
+    private boolean hasActiveReservation(Integer productId) {
+        OrdersQueryDto queryDto = new OrdersQueryDto();
+        queryDto.setProductId(productId);
+        List<OrdersVO> orders = ordersMapper.query(queryDto);
+        if (orders == null || orders.isEmpty()) {
+            return false;
+        }
+        for (OrdersVO order : orders) {
+            if (isActiveOrderStatus(order.getTradeStatus())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isActiveOrderStatus(Integer tradeStatus) {
+        return Objects.equals(tradeStatus, ORDER_STATUS_PENDING_CONFIRM)
+                || Objects.equals(tradeStatus, ORDER_STATUS_RESERVED)
+                || Objects.equals(tradeStatus, ORDER_STATUS_PARTIAL_CONFIRMED);
+    }
+
+    private void restoreProductToSale(Integer productId) {
+        if (productId == null || hasActiveReservation(productId)) {
+            return;
+        }
+        ProductVO productVO = getProductById(productId);
+        if (productVO == null) {
+            return;
+        }
+        if (PRODUCT_STATUS_SOLD.equals(resolveProductStatus(productVO.getStatus()))) {
+            return;
+        }
+        Product product = new Product();
+        product.setId(productId);
+        product.setStatus(PRODUCT_STATUS_ON_SALE);
+        product.setInventory(1);
+        productMapper.update(product);
+    }
+
+    private void markProductAsSold(Integer productId) {
+        Product product = new Product();
+        product.setId(productId);
+        product.setStatus(PRODUCT_STATUS_SOLD);
+        product.setInventory(0);
+        productMapper.update(product);
+    }
+
+    private String resolveProductStatus(String status) {
+        return StringUtils.hasText(status) ? status : PRODUCT_STATUS_ON_SALE;
+    }
 }
+

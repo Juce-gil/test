@@ -1,5 +1,5 @@
 // swalPlugin.js
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 // 五种图标： success\error\info\warning\question
 // 提示框：
 // this.$swal.fire({
@@ -13,28 +13,28 @@ const swalPlugin = {
   install(Vue) {
     Vue.prototype.$swalConfirm = async function(options = {}) {
       const defaultOptions = {
-        title: '提示',
-        text: '',
-        icon: 'info',
+        title: "提示",
+        text: "",
+        icon: "info",
         reverseButtons: true,
         showCancelButton: true,
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
         customClass: {
-          confirmButton: 'sweet-btn-primary',
+          confirmButton: "sweet-btn-primary"
         },
-        ...options,
+        ...options
       };
 
       try {
         const result = await Swal.fire(defaultOptions);
         return result.isConfirmed;
       } catch (error) {
-        console.error('Swal Error:', error);
+        console.error("Swal Error:", error);
         return false;
       }
     };
-  },
+  }
 };
 
 export default swalPlugin;
