@@ -12,42 +12,42 @@ Vue.use(VueRouter);
 const adminChildren = [
   {
     path: "/adminLayout",
-    name: "AdminDashboard",
+    name: "仪表盘",
     icon: "el-icon-pie-chart",
     component: () => import("@/views/admin/Main.vue"),
     meta: { requireAuth: true }
   },
   {
     path: "/userManage",
-    name: "UserManage",
+    name: "用户管理",
     icon: "el-icon-user-solid",
     component: () => import("@/views/admin/User.vue"),
     meta: { requireAuth: true }
   },
   {
     path: "/ProductManage",
-    name: "ProductManage",
+    name: "商品管理",
     icon: "el-icon-shopping-bag-1",
     component: () => import("@/views/admin/Product.vue"),
     meta: { requireAuth: true }
   },
   {
     path: "/categoryManage",
-    name: "CategoryManage",
+    name: "分类管理",
     icon: "el-icon-document-checked",
     component: () => import("@/views/admin/Category.vue"),
     meta: { requireAuth: true }
   },
   {
     path: "/evaluations",
-    name: "EvaluationsManage",
+    name: "评论管理",
     icon: "el-icon-chat-dot-round",
     component: () => import("@/views/admin/Evaluations.vue"),
     meta: { requireAuth: true }
   },
   {
     path: "/product-detail1",
-    name: "AdminProductDetail",
+    name: "商品详情",
     component: () => import("@/views/admin/ProductDetail.vue"),
     meta: { requireAuth: true }
   }
