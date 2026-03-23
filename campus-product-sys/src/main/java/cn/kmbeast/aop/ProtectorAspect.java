@@ -3,7 +3,6 @@ package cn.kmbeast.aop;
 import cn.kmbeast.context.LocalThreadHolder;
 import cn.kmbeast.pojo.api.ApiResult;
 import cn.kmbeast.pojo.em.RoleEnum;
-import cn.kmbeast.service.UserService;
 import cn.kmbeast.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
 
@@ -46,8 +44,8 @@ public class ProtectorAspect {
         if (claims == null) {
             return ApiResult.error("身份认证失败，请先登录");
         }
-        Integer userId = claims.get("id", Integer.class);
-        Integer roleId = claims.get("role", Integer.class);
+        Integer userId = JwtUtil.claimAsInteger(claims.get("id"));
+        Integer roleId = JwtUtil.claimAsInteger(claims.get("role"));
         // 获取被拦截方法的签名
         MethodSignature signature = (MethodSignature) proceedingJoinPoint.getSignature();
         // 获取方法上的@Protector注解实例
@@ -58,7 +56,7 @@ public class ProtectorAspect {
         String role = protectorAnnotation.role();
         // 验证用户角色
         if (!"".equals(role)) {
-            if (!Objects.equals(RoleEnum.ROLE(Math.toIntExact(roleId)), role)) {
+            if (roleId == null || !Objects.equals(RoleEnum.ROLE(roleId), role)) {
                 return ApiResult.error("无操作权限");
             }
         }
@@ -69,6 +67,5 @@ public class ProtectorAspect {
         LocalThreadHolder.clear();
         return result;
     }
-
 
 }

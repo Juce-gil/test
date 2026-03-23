@@ -56,4 +56,20 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * JWT claim 中的数字可能是 Integer、Long 等，统一转为 Integer。
+     */
+    public static Integer claimAsInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return null;
+    }
+
 }

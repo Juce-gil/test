@@ -11,7 +11,7 @@
       >
         <img
           v-if="userAvatar"
-          :src="userAvatar"
+          :src="avatarUrl(userAvatar)"
           style="width: 88px;height: 88px;"
         />
         <i v-else class="el-icon-plus avatar-uploader-icon"></i>
@@ -110,6 +110,8 @@
   </div>
 </template>
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   name: "Self",
   data() {
@@ -122,6 +124,9 @@ export default {
     this.auth();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     // 提交个人信息修改
     async postInfo() {
       const { userName, userEmail } = this.userInfo;

@@ -46,8 +46,16 @@ const adminChildren = [
     meta: { requireAuth: true }
   },
   {
+    path: "/ordersManage",
+    name: "订单管理",
+    icon: "el-icon-s-order",
+    component: () => import("@/views/admin/Orders.vue"),
+    meta: { requireAuth: true }
+  },
+  {
     path: "/product-detail1",
     name: "商品详情",
+    show: false,
     component: () => import("@/views/admin/ProductDetail.vue"),
     meta: { requireAuth: true }
   }
@@ -58,7 +66,7 @@ const userChildren = [
     name: "UserProduct",
     path: "/product",
     component: () => import("@/views/user/Product.vue"),
-    meta: { requireAuth: true }
+    meta: { requireAuth: false }
   },
   {
     name: "MyProduct",
@@ -85,6 +93,27 @@ const userChildren = [
     meta: { requireAuth: true }
   },
   {
+    name: "BuyOrdersCompat",
+    path: "/buyOrders",
+    show: false,
+    component: () => import("@/views/user/BuyOrders.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "MyOrdersCompat",
+    path: "/myOrders",
+    show: false,
+    component: () => import("@/views/user/MyOrders.vue"),
+    meta: { requireAuth: true }
+  },
+  {
+    name: "PayOrderCompat",
+    path: "/payOrder",
+    show: false,
+    component: () => import("@/views/user/PayOrder.vue"),
+    meta: { requireAuth: true }
+  },
+  {
     name: "Message",
     path: "/message",
     component: () => import("@/views/user/Message.vue"),
@@ -102,7 +131,7 @@ const userChildren = [
     show: false,
     auth: false,
     component: () => import("@/views/user/Search.vue"),
-    meta: { requireAuth: true }
+    meta: { requireAuth: false }
   },
   {
     name: "PostProduct",
@@ -120,13 +149,13 @@ const userChildren = [
     name: "ProductDetailCompat",
     path: "/product-detail",
     component: () => import("@/views/user/ProductDetail.vue"),
-    meta: { requireAuth: true }
+    meta: { requireAuth: false }
   },
   {
     name: "ProductDetail",
     path: "/product/detail",
     component: () => import("@/views/user/ProductDetail.vue"),
-    meta: { requireAuth: true }
+    meta: { requireAuth: false }
   }
 ];
 
@@ -146,7 +175,6 @@ const routes = [
   {
     path: "/user",
     component: () => import("@/views/user/Home.vue"),
-    meta: { requireAuth: true },
     children: userChildren
   }
 ];

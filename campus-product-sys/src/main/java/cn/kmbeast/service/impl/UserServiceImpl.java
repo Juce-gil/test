@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
         if (!Objects.equals(userLoginDTO.getUserPwd(), user.getUserPwd())) {
             return ApiResult.error("密码错误");
         }
-        if (user.getIsLogin()) {
+        if (Boolean.TRUE.equals(user.getIsLogin())) {
             return ApiResult.error("登录状态异常");
         }
         String token = JwtUtil.toToken(user.getId(), user.getUserRole());

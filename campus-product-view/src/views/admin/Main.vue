@@ -50,6 +50,8 @@
 </template>
 <script>
 import LineChart from "@/components/LineChart";
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   components: { LineChart },
   data() {
@@ -69,7 +71,10 @@ export default {
   methods: {
     route(product) {
       // 跳转商品详情
-      this.$router.push("/product-detail1?productId=" + product.id);
+      this.$router.push({
+        path: "/product-detail1",
+        query: { productId: product.id }
+      });
     },
     /**
      * 商品封面图处理
@@ -81,7 +86,7 @@ export default {
         return;
       }
       const newCoverList = product.coverList.split(",");
-      return newCoverList[0];
+      return toFullImageUrl(newCoverList[0]);
     },
     /**
      * 商品商家情况日期选择回调事件

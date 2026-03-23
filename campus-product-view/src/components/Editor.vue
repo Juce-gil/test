@@ -19,6 +19,7 @@
 import Vue from "vue";
 import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import { API_BASE_URL } from "@/utils/request";
+import { toFullImageUrl } from "@/utils/imageUrl";
 export default Vue.extend({
   components: { Editor, Toolbar },
   props: {
@@ -53,7 +54,9 @@ export default Vue.extend({
               token: sessionStorage.getItem("token")
             },
             customInsert(res, insertFn) {
-              insertFn(res.data, res.data, res.data);
+              const imageUrl = toFullImageUrl(res && res.data ? res.data : "");
+              const finalUrl = imageUrl || (res && res.data) || "";
+              insertFn(finalUrl, finalUrl, finalUrl);
             }
           }
         }

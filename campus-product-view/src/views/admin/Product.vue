@@ -98,7 +98,7 @@
               <span class="love">{{ product.likeNumber }}人想要</span>
             </div>
             <div class="info">
-              <img :src="product.userAvatar" alt="" srcset="" />
+              <img :src="avatarUrl(product.userAvatar)" alt="" srcset="" />
               <span>{{ product.userName }}</span>
             </div>
           </div>
@@ -108,6 +108,8 @@
   </div>
 </template>
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   name: "Product",
   data() {
@@ -135,14 +137,20 @@ export default {
   methods: {
     route(product) {
       // 跳转商品详情
-      this.$router.push("/product-detail?productId=" + product.id);
+      this.$router.push({
+        path: "/product-detail1",
+        query: { productId: product.id }
+      });
+    },
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
     },
     coverListParse(product) {
       if (product.coverList === null) {
         return;
       }
       const newCoverList = product.coverList.split(",");
-      return newCoverList[0];
+      return toFullImageUrl(newCoverList[0]);
     },
     /**
      * 商品砍价选中事件

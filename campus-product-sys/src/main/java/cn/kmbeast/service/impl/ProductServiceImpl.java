@@ -2,8 +2,10 @@ package cn.kmbeast.service.impl;
 
 import cn.kmbeast.context.LocalThreadHolder;
 import cn.kmbeast.mapper.InteractionMapper;
+import cn.kmbeast.mapper.MessageMapper;
 import cn.kmbeast.mapper.OrdersMapper;
 import cn.kmbeast.mapper.ProductMapper;
+import cn.kmbeast.mapper.UserMapper;
 import cn.kmbeast.pojo.api.ApiResult;
 import cn.kmbeast.pojo.api.Result;
 import cn.kmbeast.pojo.dto.query.extend.OrdersQueryDto;
@@ -11,13 +13,17 @@ import cn.kmbeast.pojo.dto.query.extend.ProductQueryDto;
 import cn.kmbeast.pojo.dto.update.OrdersDTO;
 import cn.kmbeast.pojo.em.InteractionEnum;
 import cn.kmbeast.pojo.entity.Interaction;
+import cn.kmbeast.pojo.entity.Message;
 import cn.kmbeast.pojo.entity.Orders;
 import cn.kmbeast.pojo.entity.Product;
+import cn.kmbeast.pojo.entity.User;
 import cn.kmbeast.pojo.vo.ChartVO;
 import cn.kmbeast.pojo.vo.OrdersDeliverDto;
 import cn.kmbeast.pojo.vo.OrdersVO;
 import cn.kmbeast.pojo.vo.ProductVO;
 import cn.kmbeast.service.ProductService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,6 +39,8 @@ import java.util.Objects;
  */
 @Service
 public class ProductServiceImpl implements ProductService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
 
     private static final Integer ORDER_STATUS_PENDING_CONFIRM = 1;
     private static final Integer ORDER_STATUS_RESERVED = 2;
@@ -52,6 +60,10 @@ public class ProductServiceImpl implements ProductService {
     private OrdersMapper ordersMapper;
     @Resource
     private InteractionMapper interactionMapper;
+    @Resource
+    private MessageMapper messageMapper;
+    @Resource
+    private UserMapper userMapper;
 
     @Override
     public Result<String> deliverGoods(OrdersDeliverDto ordersDeliverDto) {
@@ -165,12 +177,18 @@ public class ProductServiceImpl implements ProductService {
 
         createReservationOrder(ordersDTO, productVO);
         ordersMapper.save(ordersDTO);
+        sendOrderMessage(
+                productVO.getUserId(),
+                "用户【" + resolveCurrentUserName() + "】预约了你的商品【"
+                        + formatProductTitle(productVO.getName(), productVO.getId())
+                        + "】，订单号【" + formatOrderCode(ordersDTO.getCode(), ordersDTO.getId()) + "】，请及时处理。");
         return ApiResult.success("reservation request submitted, waiting for seller confirmation");
     }
 
     private void createReservationOrder(Orders orders, ProductVO productVO) {
         orders.setCode(createOrdersCode());
         orders.setUserId(LocalThreadHolder.getUserId());
+        orders.setProductId(productVO.getId());
         orders.setBuyNumber(1);
         orders.setTradeStatus(ORDER_STATUS_PENDING_CONFIRM);
         orders.setBuyPrice(productVO.getPrice());
@@ -208,6 +226,12 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(PRODUCT_STATUS_RESERVED);
         product.setInventory(0);
         productMapper.update(product);
+        sendOrderMessage(
+                ordersVO.getUserId(),
+                "卖家【" + formatUserDisplayName(ordersVO.getSellerName(), ordersVO.getSellerId())
+                        + "】已确认你预约的商品【"
+                        + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                        + "】，请线下交易后在订单中确认。");
         return ApiResult.success("seller confirmed reservation, product locked as RESERVED");
     }
 
@@ -239,6 +263,21 @@ public class ProductServiceImpl implements ProductService {
         ordersMapper.update(orders);
 
         restoreProductToSale(ordersVO.getProductId());
+        if (seller) {
+            sendOrderMessage(
+                    ordersVO.getUserId(),
+                    "卖家【" + formatUserDisplayName(ordersVO.getSellerName(), ordersVO.getSellerId())
+                            + "】已取消商品【"
+                            + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                            + "】的预约，订单号【" + formatOrderCode(ordersVO.getCode(), ordersVO.getId()) + "】。");
+        } else {
+            sendOrderMessage(
+                    ordersVO.getSellerId(),
+                    "买家【" + formatUserDisplayName(ordersVO.getUserName(), ordersVO.getUserId())
+                            + "】已取消商品【"
+                            + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                            + "】的预约，订单号【" + formatOrderCode(ordersVO.getCode(), ordersVO.getId()) + "】。");
+        }
         return ApiResult.success(seller ? "seller cancelled the reservation" : "reservation cancelled successfully");
     }
 
@@ -276,11 +315,23 @@ public class ProductServiceImpl implements ProductService {
             orders.setTradeStatus(ORDER_STATUS_COMPLETED);
             ordersMapper.update(orders);
             markProductAsSold(ordersVO.getProductId());
+            sendOrderMessage(
+                    ordersVO.getSellerId(),
+                    "买家【" + formatUserDisplayName(ordersVO.getUserName(), ordersVO.getUserId())
+                            + "】已确认商品【"
+                            + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                            + "】交易完成，订单【" + formatOrderCode(ordersVO.getCode(), ordersVO.getId()) + "】已完成。");
             return ApiResult.success("both parties confirmed completion, product marked as SOLD");
         }
 
         orders.setTradeStatus(ORDER_STATUS_PARTIAL_CONFIRMED);
         ordersMapper.update(orders);
+        sendOrderMessage(
+                ordersVO.getSellerId(),
+                "买家【" + formatUserDisplayName(ordersVO.getUserName(), ordersVO.getUserId())
+                        + "】已确认商品【"
+                        + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                        + "】线下交易完成，请尽快完成最终确认。");
         return ApiResult.success("buyer confirmed meetup completion, waiting for seller confirmation");
     }
 
@@ -318,11 +369,23 @@ public class ProductServiceImpl implements ProductService {
             orders.setTradeStatus(ORDER_STATUS_COMPLETED);
             ordersMapper.update(orders);
             markProductAsSold(ordersVO.getProductId());
+            sendOrderMessage(
+                    ordersVO.getUserId(),
+                    "卖家【" + formatUserDisplayName(ordersVO.getSellerName(), ordersVO.getSellerId())
+                            + "】已确认商品【"
+                            + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                            + "】交易完成，订单【" + formatOrderCode(ordersVO.getCode(), ordersVO.getId()) + "】已完成。");
             return ApiResult.success("both parties confirmed completion, product marked as SOLD");
         }
 
         orders.setTradeStatus(ORDER_STATUS_PARTIAL_CONFIRMED);
         ordersMapper.update(orders);
+        sendOrderMessage(
+                ordersVO.getUserId(),
+                "卖家【" + formatUserDisplayName(ordersVO.getSellerName(), ordersVO.getSellerId())
+                        + "】已确认商品【"
+                        + formatProductTitle(ordersVO.getProductTitle(), ordersVO.getProductId())
+                        + "】线下交易完成，请在订单中确认。");
         return ApiResult.success("seller confirmed meetup completion, waiting for buyer confirmation");
     }
 
@@ -428,5 +491,49 @@ public class ProductServiceImpl implements ProductService {
     private String resolveProductStatus(String status) {
         return StringUtils.hasText(status) ? status : PRODUCT_STATUS_ON_SALE;
     }
-}
 
+    private void sendOrderMessage(Integer userId, String content) {
+        if (userId == null || !StringUtils.hasText(content)) {
+            log.warn("Skip order notification because target user or content is empty. userId={}, content={}", userId, content);
+            return;
+        }
+        String normalizedContent = content.trim();
+        Message message = new Message();
+        message.setUserId(userId);
+        message.setContent(normalizedContent);
+        message.setIsRead(false);
+        message.setCreateTime(LocalDateTime.now());
+        int affectedRows = messageMapper.save(message);
+        if (affectedRows != 1) {
+            throw new IllegalStateException("failed to persist order notification for userId=" + userId);
+        }
+        log.info("Saved order notification. userId={}, affectedRows={}, content={}",
+                userId, affectedRows, normalizedContent);
+    }
+
+    private String resolveCurrentUserName() {
+        Integer currentUserId = LocalThreadHolder.getUserId();
+        if (currentUserId == null) {
+            return "用户";
+        }
+        User queryUser = new User();
+        queryUser.setId(currentUserId);
+        User currentUser = userMapper.getByActive(queryUser);
+        if (currentUser == null) {
+            return "用户#" + currentUserId;
+        }
+        return formatUserDisplayName(currentUser.getUserName(), currentUserId);
+    }
+
+    private String formatUserDisplayName(String userName, Integer userId) {
+        return StringUtils.hasText(userName) ? userName : "用户#" + (userId == null ? "-" : userId);
+    }
+
+    private String formatProductTitle(String productTitle, Integer productId) {
+        return StringUtils.hasText(productTitle) ? productTitle : "商品#" + (productId == null ? "-" : productId);
+    }
+
+    private String formatOrderCode(String code, Integer orderId) {
+        return StringUtils.hasText(code) ? code : "#" + (orderId == null ? "-" : orderId);
+    }
+}

@@ -17,7 +17,7 @@
         <h1 class="content-title">{{ content.name }}</h1>
         <div class="meta-info">
           <el-avatar
-            :src="content.userAvatar"
+            :src="avatarUrl(content.userAvatar)"
             size="small"
             class="author-avatar"
           ></el-avatar>
@@ -28,11 +28,15 @@
 
       <!-- 内容封面 -->
       <div class="content-cover">
-        <img :src="content.cover" :alt="content.name" class="cover-image" />
+        <img
+          :src="coverUrl(content.cover)"
+          :alt="content.name"
+          class="cover-image"
+        />
       </div>
 
       <!-- 内容详情 -->
-      <div class="content-body" v-html="content.detail"></div>
+      <div class="content-body" v-html="detailHtml"></div>
       <div>
         <Evaluations contentType="CONTENT_TYPE" :contentId="content.id" />
       </div>
@@ -42,6 +46,7 @@
 
 <script>
 import Evaluations from "@/components/Evaluations";
+import { normalizeHtmlImageUrls, toFullImageUrl } from "@/utils/imageUrl";
 export default {
   name: "ContentDetail",
   components: { Evaluations },
@@ -61,10 +66,21 @@ export default {
       likeCount: 0
     };
   },
+  computed: {
+    detailHtml() {
+      return normalizeHtmlImageUrls(this.content.detail);
+    }
+  },
   created() {
     this.fetchContentDetail();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
+    coverUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     async fetchContentDetail() {
       const contentId = this.$route.query.id;
       if (!contentId) {

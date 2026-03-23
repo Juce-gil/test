@@ -68,7 +68,7 @@
           <template slot-scope="scope">
             <el-avatar
               :size="25"
-              :src="scope.row.userAvatar"
+              :src="avatarUrl(scope.row.userAvatar)"
               style="margin-top: 10px;"
             ></el-avatar>
           </template>
@@ -187,7 +187,11 @@
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
           >
-            <img v-if="userAvatar" :src="userAvatar" class="dialog-avatar" />
+            <img
+              v-if="userAvatar"
+              :src="avatarUrl(userAvatar)"
+              class="dialog-avatar"
+            />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-row>
@@ -278,6 +282,8 @@
 </template>
 
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   data() {
     return {
@@ -318,6 +324,9 @@ export default {
     this.fetchFreshData();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     cannel() {
       this.data = {};
       this.userAvatar = "";

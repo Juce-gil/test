@@ -12,6 +12,8 @@
         <news.build.sourceEncoding>UTF-8</news.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <!-- 与 JDK 17+、IntelliJ JPS 兼容的 Lombok；覆盖父 POM 旧版本 -->
+        <lombok.version>1.18.34</lombok.version>
     </properties>
     <!--springboot父亲依赖-->
     <parent>
@@ -51,6 +53,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -113,7 +117,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -127,9 +131,7 @@
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-parameters</arg>
-                        <arg>-J-Djps.track.ap.dependencies=true</arg>
                     </compilerArgs>
-                    <fork>true</fork>
                 </configuration>
             </plugin>
         </plugins>

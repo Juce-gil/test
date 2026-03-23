@@ -290,6 +290,8 @@ export default {
           this.loginStatus = data.code === 200;
         })
         .catch(error => {
+          this.loginStatus = false;
+          this.userInfo = {};
           console.log("token 校验异常：", error);
         });
     }

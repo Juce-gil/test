@@ -33,7 +33,11 @@
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
           >
-            <img v-if="content.cover" :src="content.cover" class="avatar" />
+            <img
+              v-if="content.cover"
+              :src="coverUrl(content.cover)"
+              class="avatar"
+            />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </div>
@@ -64,6 +68,7 @@
 
 <script>
 import Editor from "@/components/Editor";
+import { toFullImageUrl } from "@/utils/imageUrl";
 import { API_BASE_URL } from "@/utils/request";
 
 export default {
@@ -81,6 +86,9 @@ export default {
     };
   },
   methods: {
+    coverUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     handleAvatarSuccess(res) {
       if (res.code === 200) {
         this.content.cover = res.data;

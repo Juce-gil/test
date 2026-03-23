@@ -49,7 +49,7 @@
           >
             <img
               v-if="userInfo.url"
-              :src="userInfo.url"
+              :src="avatarUrl(userInfo.url)"
               style="width: 80px;height: 80px;"
             />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
@@ -104,6 +104,7 @@ import { API_BASE_URL } from "@/utils/request";
 import AdminMenu from "@/components/VerticalMenu.vue";
 import Logo from "@/components/Logo.vue";
 import LevelHeader from "@/components/LevelHeader.vue";
+import { toFullImageUrl } from "@/utils/imageUrl";
 export default {
   name: "Admin",
   components: {
@@ -131,17 +132,49 @@ export default {
       dialogOperaion: false
     };
   },
+  watch: {
+    "$route.path": {
+      immediate: false,
+      handler(path) {
+        this.syncCurrentRoute(path);
+      }
+    }
+  },
   created() {
-    let menus = router.options.routes.filter(
-      route => route.path == "/admin"
-    )[0];
-    this.adminRoutes = menus.children;
+    const menus = router.options.routes.find(route => route.path === "/admin");
+    this.adminRoutes = menus ? menus.children || [] : [];
     this.tokenCheckLoad();
     this.menuOperationHistory();
-    this.$router.push("/adminLayout");
+    this.syncCurrentRoute(this.$route.path);
   },
 
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
+    resolveMenuByPath(path) {
+      return this.adminRoutes.find(item => item.path === path);
+    },
+    syncCurrentRoute(path) {
+      const targetPath =
+        path && path !== "/admin"
+          ? path
+          : sessionStorage.getItem("activeMenuItem") || "/adminLayout";
+      const targetMenu =
+        this.resolveMenuByPath(targetPath) ||
+        this.resolveMenuByPath("/adminLayout");
+
+      if (!targetMenu) {
+        return;
+      }
+
+      this.tag = targetMenu.name || "仪表盘";
+      sessionStorage.setItem("activeMenuItem", targetMenu.path);
+
+      if (this.$route.path !== targetMenu.path) {
+        this.$router.replace(targetMenu.path);
+      }
+    },
     async updateUserInfo() {
       try {
         const userUpdateDTO = {
@@ -223,9 +256,12 @@ export default {
       this.flag = flag;
     },
     handleRouteSelect(index) {
-      let ary = this.adminRoutes.filter(entity => entity.path == index);
-      this.tag = ary[0].name;
-      if (this.$router.currentRoute.fullPath == index) {
+      const targetMenu = this.resolveMenuByPath(index);
+      if (targetMenu) {
+        this.tag = targetMenu.name;
+        sessionStorage.setItem("activeMenuItem", targetMenu.path);
+      }
+      if (this.$router.currentRoute.fullPath === index) {
         return;
       }
       this.$router.push(index);

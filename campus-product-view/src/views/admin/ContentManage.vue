@@ -60,7 +60,10 @@
             </h3>
 
             <div class="author-info">
-              <el-avatar :src="content.userAvatar" size="small"></el-avatar>
+              <el-avatar
+                :src="avatarUrl(content.userAvatar)"
+                size="small"
+              ></el-avatar>
               <span class="author-name">{{ content.userName }}</span>
             </div>
 
@@ -82,6 +85,8 @@
 </template>
 
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   name: "ContentList",
   data() {
@@ -96,6 +101,9 @@ export default {
     this.fetchFreshData();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     addContent() {
       this.$router.push("/post-content");
     },
@@ -105,7 +113,7 @@ export default {
     },
 
     getCoverImage(content) {
-      return content.cover || "";
+      return toFullImageUrl((content && content.cover) || "");
     },
 
     async fetchFreshData() {

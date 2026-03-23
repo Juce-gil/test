@@ -35,7 +35,7 @@
           <template slot-scope="scope">
             <el-avatar
               :size="25"
-              :src="scope.row.userAvatar"
+              :src="avatarUrl(scope.row.userAvatar)"
               style="margin-top: 10px;"
             ></el-avatar>
           </template>
@@ -79,6 +79,8 @@
 </template>
 
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   data() {
     return {
@@ -95,6 +97,9 @@ export default {
     this.fetchFreshData();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     // 批量删除数据
     async batchDelete() {
       if (!this.delectedRows.length) {

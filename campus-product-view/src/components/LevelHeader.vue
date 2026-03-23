@@ -19,7 +19,7 @@
         >
           <el-avatar
             :size="35"
-            :src="userInfo.url"
+            :src="avatarUrl(userInfo.url)"
             style="margin-top: 0;"
           ></el-avatar>
           <span class="userName" style="margin-left: 5px;font-size: 16px;">{{
@@ -45,6 +45,8 @@
   </div>
 </template>
 <script>
+import { toFullImageUrl } from "@/utils/imageUrl";
+
 export default {
   name: "LevelHeader",
   data() {
@@ -69,6 +71,9 @@ export default {
     }
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     // 个人中心，传回父组件处理
     userCenterPanel() {
       this.$emit("eventListener", "center");

@@ -1,7 +1,6 @@
 package cn.kmbeast.controller;
 
 import cn.kmbeast.utils.IdFactoryUtil;
-import cn.kmbeast.utils.PathUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +24,9 @@ public class FileController {
 
     @Value("${my-server.api-context-path}")
     private String API;
+
+    @Value("${trade.upload-dir:./pic}")
+    private String uploadDir;
 
     private final static String URL = "http://localhost:21090";
 
@@ -92,11 +94,11 @@ public class FileController {
      * @throws IOException 异常
      */
     public boolean uploadFile(MultipartFile multipartFile, String fileName) throws IOException {
-        return fileName(multipartFile, fileName);
+        return saveFile(multipartFile, fileName);
     }
 
-    public static boolean fileName(MultipartFile multipartFile, String fileName) throws IOException {
-        File fileDir = new File(PathUtils.getClassLoadRootPath() + "/pic");
+    private boolean saveFile(MultipartFile multipartFile, String fileName) throws IOException {
+        File fileDir = resolveUploadDir();
         if (!fileDir.exists()) {
             if (!fileDir.mkdirs()) {
                 return false;
@@ -115,6 +117,14 @@ public class FileController {
         return false;
     }
 
+    private File resolveUploadDir() throws IOException {
+        File dir = new File(uploadDir);
+        if (!dir.isAbsolute()) {
+            dir = dir.getCanonicalFile();
+        }
+        return dir;
+    }
+
     /**
      * 查看图片资源
      *
@@ -125,7 +135,7 @@ public class FileController {
     @GetMapping("/getFile")
     public void getImage(@RequestParam("fileName") String imageName,
                          HttpServletResponse response) throws IOException {
-        File fileDir = new File(PathUtils.getClassLoadRootPath() + "/pic");
+        File fileDir = resolveUploadDir();
         File image = new File(fileDir.getAbsolutePath() + "/" + imageName);
         if (image.exists()) {
             FileInputStream fileInputStream = new FileInputStream(image);
@@ -140,4 +150,3 @@ public class FileController {
     }
 
 }
-

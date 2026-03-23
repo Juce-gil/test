@@ -103,6 +103,7 @@ import Editor from "@/components/Editor";
 import UserPageSection from "@/components/user/UserPageSection.vue";
 import { clearProductInfo, getProductInfo } from "@/utils/storage";
 import { API_BASE_URL } from "@/utils/request";
+import { toFullImageUrl } from "@/utils/imageUrl";
 export default {
   components: { Editor, UserPageSection },
   name: "EditProduct",
@@ -122,6 +123,25 @@ export default {
     this.fetchCategoryList();
   },
   methods: {
+    imageUrl(url) {
+      return toFullImageUrl(url || "");
+    },
+    createCoverFile(url) {
+      const rawUrl = url || "";
+      return {
+        uid: Date.now() + Math.floor(Math.random() * 10001),
+        name: Date.now() + Math.floor(Math.random() * 10001),
+        status: "success",
+        url: this.imageUrl(rawUrl),
+        rawUrl
+      };
+    },
+    resolveCoverValue(file) {
+      if (!file) return "";
+      return (
+        file.rawUrl || (file.response && file.response.data) || file.url || ""
+      );
+    },
     getStorageProductInfo() {
       this.product = getProductInfo();
       if (!this.product) {
@@ -141,14 +161,11 @@ export default {
       if (!product || product.coverList === null) {
         return;
       }
-      this.coverList = product.coverList.split(",").map(coverEntity => {
-        return {
-          uid: Date.now() + Math.floor(Math.random() * 10001),
-          name: Date.now() + Math.floor(Math.random() * 10001),
-          status: "success",
-          url: coverEntity
-        };
-      });
+      this.coverList = product.coverList
+        .split(",")
+        .map(coverEntity => coverEntity && coverEntity.trim())
+        .filter(Boolean)
+        .map(coverEntity => this.createCoverFile(coverEntity));
     },
     /**
      * 修改商品信息
@@ -178,7 +195,9 @@ export default {
         });
         return;
       }
-      const coverUrlList = this.coverList.map(entity => entity.url);
+      const coverUrlList = this.coverList
+        .map(entity => this.resolveCoverValue(entity))
+        .filter(Boolean);
       this.product.coverList = coverUrlList.join(",");
       // 商品封面需要处理
       this.$axios
@@ -241,20 +260,26 @@ export default {
      * @param {*} file
      * @param {*} fileList
      */
-    handlePictureCardSuccess(file) {
-      this.coverList.push({
-        uid: Date.now() + Math.floor(Math.random() * 10001),
-        name: Date.now() + Math.floor(Math.random() * 10001),
-        status: "success",
-        url: file.data
-      });
+    handlePictureCardSuccess(response) {
+      if (!response || response.code !== 200) {
+        this.$message.error("Image upload failed");
+        return;
+      }
+      this.coverList.push(this.createCoverFile(response.data));
     },
     handleRemove(file, fileList) {
-      this.coverList = fileList;
+      this.coverList = fileList.map(item => {
+        const rawUrl = this.resolveCoverValue(item);
+        return {
+          ...item,
+          rawUrl,
+          url: this.imageUrl(rawUrl)
+        };
+      });
       console.log(file, fileList);
     },
     handlePictureCardPreview(file) {
-      this.dialogImageUrl = file.url;
+      this.dialogImageUrl = this.imageUrl(this.resolveCoverValue(file));
       this.dialogVisible = true;
     }
   }

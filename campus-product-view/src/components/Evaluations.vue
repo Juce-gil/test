@@ -4,7 +4,7 @@
       <h2 class="commentHeader">评论&nbsp;{{ evaluationsCount }}</h2>
       <el-row style="margin: 15px 0;">
         <el-col :span="2">
-          <el-avatar :src="userData.userAvatar"></el-avatar>
+          <el-avatar :src="avatarUrl(userData.userAvatar)"></el-avatar>
         </el-col>
         <el-col :span="22">
           <div
@@ -49,7 +49,10 @@
       >
         <el-row>
           <el-col :span="2">
-            <el-avatar size="large" :src="comment.userAvatar"></el-avatar>
+            <el-avatar
+              size="large"
+              :src="avatarUrl(comment.userAvatar)"
+            ></el-avatar>
           </el-col>
           <el-col :span="22">
             <span
@@ -173,7 +176,7 @@
               >
                 <el-avatar
                   size="small"
-                  :src="commentChild.userAvatar"
+                  :src="avatarUrl(commentChild.userAvatar)"
                   style="margin-right: 5px;"
                 ></el-avatar>
                 <span style="color: #515767; padding: 0 5px;">{{
@@ -191,7 +194,7 @@
                 <el-avatar
                   v-if="commentChild.replierName != null"
                   size="small"
-                  :src="commentChild.replierAvatar"
+                  :src="avatarUrl(commentChild.replierAvatar)"
                   style="margin-right: 5px;"
                 ></el-avatar>
                 <span
@@ -311,6 +314,7 @@
 
 <script>
 import { timeAgo } from "@/utils/data";
+import { toFullImageUrl } from "@/utils/imageUrl";
 export default {
   props: {
     contentId: {
@@ -360,6 +364,9 @@ export default {
     this.loadCommentList();
   },
   methods: {
+    avatarUrl(url) {
+      return toFullImageUrl(url || "");
+    },
     getUserInfo() {
       const userInfo = sessionStorage.getItem("userInfo");
       this.userData = JSON.parse(userInfo);
